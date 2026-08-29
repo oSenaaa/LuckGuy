@@ -12,7 +12,9 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
   const [session] = await db
     .select({
       id: courseSessions.id,
+      videoProvider: courseSessions.videoProvider,
       videoBlobUrl: courseSessions.videoBlobUrl,
+      videoYoutubeId: courseSessions.videoYoutubeId,
       minWatchPercent: courseSessions.minWatchPercent,
       courseName: courses.name,
       status: courseSessions.status,
@@ -22,7 +24,11 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
     .where(eq(courseSessions.accessSlug, slug))
     .limit(1);
 
-  if (!session || session.status !== "published" || !session.videoBlobUrl) {
+  const hasVideo =
+    session && ((session.videoProvider === "blob" && session.videoBlobUrl) ||
+      (session.videoProvider === "youtube" && session.videoYoutubeId));
+
+  if (!session || session.status !== "published" || !hasVideo) {
     redirect(`/t/${slug}`);
   }
 
@@ -48,7 +54,9 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
       <h1 className="mb-4 text-xl font-semibold">{session.courseName}</h1>
       <VideoPlayer
         courseSessionId={session.id}
+        provider={session.videoProvider}
         videoUrl={session.videoBlobUrl}
+        youtubeId={session.videoYoutubeId}
         minWatchPercent={session.minWatchPercent}
         initialWatchedPercent={progress ? Number(progress.watchedPercent) : 0}
         initialCompleted={Boolean(progress?.completedAt)}

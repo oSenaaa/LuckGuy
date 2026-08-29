@@ -44,7 +44,28 @@ export async function setSessionVideo(sessionId: string, videoBlobUrl: string, v
   await requireAdmin();
   await getDb()
     .update(courseSessions)
-    .set({ videoBlobUrl, videoDurationSeconds, updatedAt: new Date() })
+    .set({
+      videoProvider: "blob",
+      videoBlobUrl,
+      videoYoutubeId: null,
+      videoDurationSeconds,
+      updatedAt: new Date(),
+    })
+    .where(eq(courseSessions.id, sessionId));
+  revalidatePath(`/admin/sessions/${sessionId}`);
+}
+
+export async function setSessionVideoYoutube(sessionId: string, videoYoutubeId: string, videoDurationSeconds: number) {
+  await requireAdmin();
+  await getDb()
+    .update(courseSessions)
+    .set({
+      videoProvider: "youtube",
+      videoYoutubeId,
+      videoBlobUrl: null,
+      videoDurationSeconds,
+      updatedAt: new Date(),
+    })
     .where(eq(courseSessions.id, sessionId));
   revalidatePath(`/admin/sessions/${sessionId}`);
 }
@@ -54,7 +75,12 @@ export async function publishSession(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const db = getDb();
   const [session] = await db.select().from(courseSessions).where(eq(courseSessions.id, id)).limit(1);
-  if (!session?.videoBlobUrl) throw new Error("Envie o vídeo antes de publicar a turma");
+  const hasVideo =
+    (session?.videoProvider === "blob" && session.videoBlobUrl) ||
+    (session?.videoProvider === "youtube" && session.videoYoutubeId);
+  if (!hasVideo || !session?.videoDurationSeconds) {
+    throw new Error("Envie o vídeo antes de publicar a turma");
+  }
 
   await db.update(courseSessions).set({ status: "published" }).where(eq(courseSessions.id, id));
   revalidatePath(`/admin/sessions/${id}`);

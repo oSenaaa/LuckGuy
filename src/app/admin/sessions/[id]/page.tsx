@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { certificates, companies, courseSessions, courses, participants, viewingProgress } from "@/lib/db/schema";
 import { archiveSession, publishSession, reissueCertificate } from "../actions";
 import { VideoUpload } from "./video-upload";
+import { YoutubeVideoForm } from "./youtube-video-form";
 
 export default async function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,7 +17,10 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
       status: courseSessions.status,
       accessSlug: courseSessions.accessSlug,
       workloadHours: courseSessions.workloadHours,
+      videoProvider: courseSessions.videoProvider,
       videoBlobUrl: courseSessions.videoBlobUrl,
+      videoYoutubeId: courseSessions.videoYoutubeId,
+      videoDurationSeconds: courseSessions.videoDurationSeconds,
       minWatchPercent: courseSessions.minWatchPercent,
       courseName: courses.name,
       companyName: companies.name,
@@ -76,7 +80,20 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <div className="mt-6 flex flex-col gap-4">
-        <VideoUpload sessionId={session.id} />
+        <p className="text-sm text-gray-500">
+          Fonte de vídeo atual:{" "}
+          {session.videoProvider === "youtube" && session.videoYoutubeId
+            ? `YouTube (${session.videoYoutubeId})`
+            : session.videoProvider === "blob" && session.videoBlobUrl
+              ? "Arquivo enviado"
+              : "Nenhuma ainda"}
+          {session.videoDurationSeconds ? ` · ${Math.round(session.videoDurationSeconds / 60)} min` : ""}
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <VideoUpload sessionId={session.id} />
+          <YoutubeVideoForm sessionId={session.id} />
+        </div>
 
         <div className="flex gap-3">
           {session.status !== "published" && (

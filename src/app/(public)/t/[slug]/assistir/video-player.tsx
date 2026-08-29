@@ -1,10 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {
+  createYoutubePlayer,
+  loadYoutubeIframeApi,
+  YOUTUBE_PLAYER_STATE,
+  YoutubePlayer,
+} from "@/lib/youtube-iframe-api";
 
 type Props = {
   courseSessionId: string;
-  videoUrl: string;
+  provider: "blob" | "youtube";
+  videoUrl: string | null;
+  youtubeId: string | null;
   minWatchPercent: number;
   initialWatchedPercent: number;
   initialCompleted: boolean;
@@ -13,27 +21,38 @@ type Props = {
 
 export function VideoPlayer({
   courseSessionId,
+  provider,
   videoUrl,
+  youtubeId,
   minWatchPercent,
   initialWatchedPercent,
   initialCompleted,
   initialCertificateUrl,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const youtubePlayerRef = useRef<YoutubePlayer | null>(null);
   const [watchedPercent, setWatchedPercent] = useState(initialWatchedPercent);
   const [completed, setCompleted] = useState(initialCompleted);
   const [certificateUrl, setCertificateUrl] = useState(initialCertificateUrl);
   const [issuing, setIssuing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function getCurrentTime() {
+    if (provider === "blob") return videoRef.current?.currentTime ?? 0;
+    return youtubePlayerRef.current?.getCurrentTime() ?? 0;
+  }
+
+  function isPlaying() {
+    if (provider === "blob") return videoRef.current ? !videoRef.current.paused : false;
+    return youtubePlayerRef.current?.getPlayerState() === YOUTUBE_PLAYER_STATE.PLAYING;
+  }
+
   async function sendHeartbeat() {
-    const video = videoRef.current;
-    if (!video) return;
     try {
       const res = await fetch("/api/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseSessionId, currentTime: video.currentTime }),
+        body: JSON.stringify({ courseSessionId, currentTime: getCurrentTime() }),
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -45,9 +64,29 @@ export function VideoPlayer({
   }
 
   useEffect(() => {
+    if (provider !== "youtube" || !youtubeId) return;
+
+    let cancelled = false;
+    loadYoutubeIframeApi().then(() => {
+      if (cancelled) return;
+      youtubePlayerRef.current = createYoutubePlayer(`yt-player-${courseSessionId}`, youtubeId, {
+        onStateChange: (event) => {
+          if (event.data === YOUTUBE_PLAYER_STATE.PAUSED || event.data === YOUTUBE_PLAYER_STATE.ENDED) {
+            sendHeartbeat();
+          }
+        },
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [provider, youtubeId, courseSessionId]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
-      const video = videoRef.current;
-      if (video && !video.paused) sendHeartbeat();
+      if (isPlaying()) sendHeartbeat();
     }, 10000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -74,14 +113,20 @@ export function VideoPlayer({
 
   return (
     <div className="flex flex-col gap-4">
-      <video
-        ref={videoRef}
-        src={videoUrl}
-        controls
-        className="w-full rounded bg-black"
-        onPause={sendHeartbeat}
-        onEnded={sendHeartbeat}
-      />
+      {provider === "blob" ? (
+        <video
+          ref={videoRef}
+          src={videoUrl ?? undefined}
+          controls
+          className="w-full rounded bg-black"
+          onPause={sendHeartbeat}
+          onEnded={sendHeartbeat}
+        />
+      ) : (
+        <div className="aspect-video w-full overflow-hidden rounded bg-black">
+          <div id={`yt-player-${courseSessionId}`} className="h-full w-full" />
+        </div>
+      )}
 
       <div>
         <div className="h-2 w-full overflow-hidden rounded bg-gray-200">

@@ -17,6 +17,8 @@ export const sessionStatusEnum = pgEnum("session_status", [
   "archived",
 ]);
 
+export const videoProviderEnum = pgEnum("video_provider", ["blob", "youtube"]);
+
 export const companies = pgTable("companies", {
   id: uuid("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
@@ -64,7 +66,9 @@ export const courseSessions = pgTable("course_sessions", {
   courseId: uuid("course_id").notNull().references(() => courses.id),
   companyId: uuid("company_id").notNull().references(() => companies.id),
   name: text("name").notNull(),
+  videoProvider: videoProviderEnum("video_provider").notNull().default("blob"),
   videoBlobUrl: text("video_blob_url"),
+  videoYoutubeId: text("video_youtube_id"),
   videoDurationSeconds: integer("video_duration_seconds"),
   workloadHours: numeric("workload_hours", { precision: 5, scale: 2 }).notNull(),
   accessSlug: text("access_slug").notNull().unique(),
