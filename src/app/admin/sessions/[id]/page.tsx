@@ -99,7 +99,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
           {session.status !== "published" && (
             <form action={publishSession}>
               <input type="hidden" name="id" value={session.id} />
-              <button type="submit" className="rounded bg-black px-4 py-2 text-sm text-white">
+              <button type="submit" className="rounded bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
                 Publicar turma
               </button>
             </form>

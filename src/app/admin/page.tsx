@@ -23,7 +23,7 @@ export default async function AdminDashboard() {
       <h1 className="text-lg font-semibold">Painel</h1>
 
       <div className="mt-6 flex gap-3">
-        <Link href="/admin/sessions/new" className="rounded bg-black px-4 py-2 text-sm text-white">
+        <Link href="/admin/sessions/new" className="rounded bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
           Nova turma
         </Link>
         <Link href="/admin/courses" className="rounded border px-4 py-2 text-sm">

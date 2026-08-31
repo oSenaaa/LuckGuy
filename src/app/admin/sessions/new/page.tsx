@@ -60,7 +60,7 @@ export default async function NewSessionPage() {
           </div>
         </div>
 
-        <button type="submit" className="mt-2 self-start rounded bg-black px-4 py-2 text-sm text-white">
+        <button type="submit" className="mt-2 self-start rounded bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
           Criar turma
         </button>
       </form>

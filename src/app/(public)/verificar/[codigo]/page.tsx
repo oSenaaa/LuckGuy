@@ -18,19 +18,19 @@ export default async function VerifyCertificatePage({
 
   if (!certificate) {
     return (
-      <main className="mx-auto max-w-md p-8 text-center">
+      <section className="mx-auto max-w-md px-6 py-16 text-center">
         <h1 className="text-xl font-semibold">Certificado não encontrado</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-foreground/70">
           Verifique se o código foi digitado corretamente.
         </p>
-      </main>
+      </section>
     );
   }
 
   const isValid = !certificate.revokedAt;
 
   return (
-    <main className="mx-auto max-w-md p-8">
+    <section className="mx-auto max-w-md px-6 py-16">
       <h1 className="text-xl font-semibold">
         {isValid ? "Certificado válido" : "Certificado revogado"}
       </h1>
@@ -59,7 +59,7 @@ export default async function VerifyCertificatePage({
           href={certificate.pdfBlobUrl}
           target="_blank"
           rel="noreferrer"
-          className="mt-6 inline-block rounded bg-black px-4 py-2 text-white"
+          className="mt-6 inline-block rounded bg-brand px-4 py-2 text-white transition-colors hover:bg-brand-dark"
         >
           Ver PDF
         </a>
@@ -67,6 +67,6 @@ export default async function VerifyCertificatePage({
       {!isValid && certificate.revokedReason && (
         <p className="mt-4 text-sm text-red-600">Motivo: {certificate.revokedReason}</p>
       )}
-    </main>
+    </section>
   );
 }

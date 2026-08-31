@@ -63,7 +63,7 @@ export function YoutubeVideoForm({ sessionId }: { sessionId: string }) {
         <button
           type="submit"
           disabled={status === "loading"}
-          className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-40"
+          className="rounded bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark disabled:opacity-40"
         >
           {status === "loading" ? "Verificando..." : "Usar este vídeo"}
         </button>

@@ -50,7 +50,7 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
     .limit(1);
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
+    <section className="mx-auto max-w-2xl px-6 py-12">
       <h1 className="mb-4 text-xl font-semibold">{session.courseName}</h1>
       <VideoPlayer
         courseSessionId={session.id}
@@ -62,6 +62,6 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
         initialCompleted={Boolean(progress?.completedAt)}
         initialCertificateUrl={existingCertificate?.pdfBlobUrl ?? null}
       />
-    </main>
+    </section>
   );
 }

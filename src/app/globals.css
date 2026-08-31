@@ -1,26 +1,62 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Identidade visual — LÍDER Treinamentos
+   Paleta e tipografia derivadas de lidersaude.com.br
+   --------------------------------------------------------------------------- */
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #4d4d4f;
+
+  --brand: #ba0e31;
+  --brand-dark: #790003;
+  --brand-gray: #8a8c8e;
+  --surface: #f8fafe;
+  --border-muted: #e6e8eb;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-gray: var(--brand-gray);
+  --color-surface: var(--surface);
+  --color-border-muted: var(--border-muted);
+
+  --font-sans: var(--font-sora), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #171314;
     --foreground: #ededed;
+
+    --brand: #e8506b;
+    --brand-dark: #ba0e31;
+    --brand-gray: #a1a4a5;
+    --surface: #211a1c;
+    --border-muted: #37302f;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: var(--brand);
+  color: #fff;
 }

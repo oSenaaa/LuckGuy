@@ -129,13 +129,13 @@ export function VideoPlayer({
       )}
 
       <div>
-        <div className="h-2 w-full overflow-hidden rounded bg-gray-200">
+        <div className="h-2 w-full overflow-hidden rounded bg-border-muted">
           <div
-            className="h-full bg-black transition-all"
+            className="h-full bg-brand transition-all"
             style={{ width: `${Math.min(100, watchedPercent)}%` }}
           />
         </div>
-        <p className="mt-1 text-xs text-gray-600">
+        <p className="mt-1 text-xs text-foreground/60">
           {watchedPercent.toFixed(0)}% assistido — mínimo necessário: {minWatchPercent}%
         </p>
       </div>
@@ -156,7 +156,7 @@ export function VideoPlayer({
           type="button"
           disabled={!completed || issuing}
           onClick={issueCertificate}
-          className="rounded bg-black px-4 py-2 text-white disabled:opacity-40"
+          className="rounded bg-brand px-4 py-2 text-white transition-colors hover:bg-brand-dark disabled:opacity-40"
         >
           {issuing ? "Gerando certificado..." : "Emitir certificado"}
         </button>

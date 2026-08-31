@@ -15,7 +15,7 @@ export default async function CompaniesPage() {
         <input name="cnpj" placeholder="CNPJ (opcional)" className="rounded border px-3 py-2" />
         <input name="contactEmail" placeholder="E-mail de contato (opcional)" className="rounded border px-3 py-2" />
         <input name="contactPhone" placeholder="Telefone de contato (opcional)" className="rounded border px-3 py-2" />
-        <button type="submit" className="self-start rounded bg-black px-4 py-2 text-sm text-white">
+        <button type="submit" className="self-start rounded bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
           Adicionar empresa
         </button>
       </form>

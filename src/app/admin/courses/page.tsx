@@ -21,7 +21,7 @@ export default async function CoursesPage() {
           className="rounded border px-3 py-2"
         />
         <textarea name="description" placeholder="Descrição (opcional)" className="rounded border px-3 py-2" />
-        <button type="submit" className="self-start rounded bg-black px-4 py-2 text-sm text-white">
+        <button type="submit" className="self-start rounded bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
           Adicionar treinamento
         </button>
       </form>

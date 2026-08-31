@@ -22,7 +22,7 @@ export default async function SessionsPage() {
     <div className="mx-auto max-w-3xl">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Turmas</h1>
-        <Link href="/admin/sessions/new" className="rounded bg-black px-4 py-2 text-sm text-white">
+        <Link href="/admin/sessions/new" className="rounded bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
           Nova turma
         </Link>
       </div>

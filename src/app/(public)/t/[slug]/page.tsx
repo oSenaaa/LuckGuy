@@ -18,12 +18,12 @@ export default async function IdentifyPage({ params }: { params: Promise<{ slug:
 
   if (!session || session.status !== "published") {
     return (
-      <main className="mx-auto max-w-md p-8 text-center">
+      <section className="mx-auto max-w-md px-6 py-16 text-center">
         <h1 className="text-xl font-semibold">Turma indisponível</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-foreground/70">
           Este link não está mais ativo. Fale com a empresa responsável pelo treinamento.
         </p>
-      </main>
+      </section>
     );
   }
 
@@ -38,9 +38,9 @@ export default async function IdentifyPage({ params }: { params: Promise<{ slug:
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center p-8">
+    <section className="mx-auto flex max-w-md flex-col justify-center px-6 py-16">
       <h1 className="text-xl font-semibold">{session.courseName}</h1>
-      <p className="mt-1 text-sm text-gray-600">
+      <p className="mt-1 text-sm text-foreground/70">
         Informe seu nome completo e telefone para confirmar sua presença e assistir ao treinamento.
       </p>
       <form action={handleSubmit} className="mt-6 flex flex-col gap-4">
@@ -64,10 +64,13 @@ export default async function IdentifyPage({ params }: { params: Promise<{ slug:
             placeholder="(00) 00000-0000"
           />
         </div>
-        <button type="submit" className="mt-2 rounded bg-black px-4 py-2 text-white">
+        <button
+          type="submit"
+          className="mt-2 rounded bg-brand px-4 py-2 text-white transition-colors hover:bg-brand-dark"
+        >
           Confirmar presença e começar
         </button>
       </form>
-    </main>
+    </section>
   );
 }
