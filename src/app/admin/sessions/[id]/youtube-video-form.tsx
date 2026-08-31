@@ -1,9 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Link2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { extractYoutubeVideoId } from "@/lib/youtube";
 import { createYoutubePlayer, loadYoutubeIframeApi } from "@/lib/youtube-iframe-api";
 import { setSessionVideoYoutube } from "../actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 function readDuration(videoId: string, containerId: string): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -20,8 +27,8 @@ function readDuration(videoId: string, containerId: string): Promise<number> {
 }
 
 export function YoutubeVideoForm({ sessionId }: { sessionId: string }) {
-  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -30,47 +37,44 @@ export function YoutubeVideoForm({ sessionId }: { sessionId: string }) {
     const videoId = extractYoutubeVideoId(url);
 
     if (!videoId) {
-      setError("Link do YouTube inválido");
-      setStatus("error");
+      toast.error("Link do YouTube inválido");
       return;
     }
 
-    setStatus("loading");
-    setError(null);
+    setLoading(true);
     try {
       await loadYoutubeIframeApi();
       const duration = await readDuration(videoId, `yt-probe-${sessionId}`);
       await setSessionVideoYoutube(sessionId, videoId, duration);
-      setStatus("done");
+      toast.success("Vídeo do YouTube configurado");
+      router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao processar o vídeo");
-      setStatus("error");
+      toast.error(err instanceof Error ? err.message : "Erro ao processar o vídeo");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div className="rounded border p-4">
-      <label className="text-sm font-medium">Vídeo via link do YouTube</label>
+    <div className="rounded-lg border p-4">
+      <Label className="flex items-center gap-2">
+        <Link2 className="size-4 text-muted-foreground" />
+        Vídeo via link do YouTube
+      </Label>
       <form onSubmit={handleSubmit} className="mt-2 flex gap-2">
-        <input
+        <Input
           name="youtubeUrl"
           type="url"
           required
           placeholder="https://www.youtube.com/watch?v=..."
-          disabled={status === "loading"}
-          className="flex-1 rounded border px-3 py-2 text-sm"
+          disabled={loading}
         />
-        <button
-          type="submit"
-          disabled={status === "loading"}
-          className="rounded bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark disabled:opacity-40"
-        >
-          {status === "loading" ? "Verificando..." : "Usar este vídeo"}
-        </button>
+        <Button type="submit" disabled={loading}>
+          {loading ? <Loader2 className="animate-spin" /> : null}
+          {loading ? "Verificando…" : "Usar vídeo"}
+        </Button>
       </form>
       <div id={`yt-probe-${sessionId}`} className="hidden" />
-      {status === "done" && <p className="mt-1 text-xs text-green-700">Vídeo configurado. Atualize a página.</p>}
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );
 }

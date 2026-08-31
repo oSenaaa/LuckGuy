@@ -1,7 +1,25 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
+import {
+  ArrowUpRight,
+  Building2,
+  CalendarClock,
+  GraduationCap,
+  LayoutDashboard,
+  Plus,
+} from "lucide-react";
+
 import { getDb } from "@/lib/db";
 import { companies, courseSessions, courses } from "@/lib/db/schema";
+import { PageHeader } from "@/components/admin/page-header";
+import { SessionStatusBadge } from "@/components/admin/session-status-badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default async function AdminDashboard() {
   const recentSessions = await getDb()
@@ -18,36 +36,73 @@ export default async function AdminDashboard() {
     .orderBy(desc(courseSessions.createdAt))
     .limit(5);
 
-  return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="text-lg font-semibold">Painel</h1>
+  const shortcuts = [
+    { label: "Nova turma", href: "/admin/sessions/new", icon: Plus, primary: true },
+    { label: "Treinamentos", href: "/admin/courses", icon: GraduationCap },
+    { label: "Empresas", href: "/admin/companies", icon: Building2 },
+  ];
 
-      <div className="mt-6 flex gap-3">
-        <Link href="/admin/sessions/new" className="rounded bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
-          Nova turma
-        </Link>
-        <Link href="/admin/courses" className="rounded border px-4 py-2 text-sm">
-          Treinamentos
-        </Link>
-        <Link href="/admin/companies" className="rounded border px-4 py-2 text-sm">
-          Empresas
-        </Link>
+  return (
+    <div className="mx-auto w-full max-w-4xl space-y-6">
+      <PageHeader
+        icon={LayoutDashboard}
+        title="Painel"
+        description="Visão geral das turmas e atalhos de gestão."
+      />
+
+      <div className="flex flex-wrap gap-2">
+        {shortcuts.map(({ label, href, icon: Icon, primary }) => (
+          <Button
+            key={href}
+            asChild
+            variant={primary ? "default" : "outline"}
+            size="lg"
+          >
+            <Link href={href}>
+              <Icon />
+              {label}
+            </Link>
+          </Button>
+        ))}
       </div>
 
-      <h2 className="mt-8 text-sm font-semibold">Turmas recentes</h2>
-      <ul className="mt-2 divide-y">
-        {recentSessions.map((session) => (
-          <li key={session.id} className="py-2 text-sm">
-            <Link href={`/admin/sessions/${session.id}`} className="underline">
-              {session.name}
-            </Link>
-            <span className="ml-2 text-gray-500">
-              {session.courseName} · {session.companyName} · {session.status}
-            </span>
-          </li>
-        ))}
-        {recentSessions.length === 0 && <li className="py-2 text-sm text-gray-500">Nenhuma turma ainda.</li>}
-      </ul>
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle className="flex items-center gap-2">
+            <CalendarClock className="size-4 text-muted-foreground" />
+            Turmas recentes
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {recentSessions.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Nenhuma turma ainda.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {recentSessions.map((session) => (
+                <li key={session.id}>
+                  <Link
+                    href={`/admin/sessions/${session.id}`}
+                    className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{session.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {session.courseName} · {session.companyName}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <SessionStatusBadge status={session.status} />
+                      <ArrowUpRight className="size-4 text-muted-foreground" />
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

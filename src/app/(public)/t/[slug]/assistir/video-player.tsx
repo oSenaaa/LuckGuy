@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Award, CheckCircle2, Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   createYoutubePlayer,
   loadYoutubeIframeApi,
   YOUTUBE_PLAYER_STATE,
   YoutubePlayer,
 } from "@/lib/youtube-iframe-api";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 type Props = {
   courseSessionId: string;
@@ -35,7 +40,6 @@ export function VideoPlayer({
   const [completed, setCompleted] = useState(initialCompleted);
   const [certificateUrl, setCertificateUrl] = useState(initialCertificateUrl);
   const [issuing, setIssuing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   function getCurrentTime() {
     if (provider === "blob") return videoRef.current?.currentTime ?? 0;
@@ -94,7 +98,6 @@ export function VideoPlayer({
 
   async function issueCertificate() {
     setIssuing(true);
-    setError(null);
     try {
       const res = await fetch("/api/certificates/issue", {
         method: "POST",
@@ -104,12 +107,17 @@ export function VideoPlayer({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erro ao emitir certificado");
       setCertificateUrl(data.pdfUrl);
+      toast.success("Certificado emitido com sucesso");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao emitir certificado");
+      toast.error(
+        err instanceof Error ? err.message : "Erro ao emitir certificado",
+      );
     } finally {
       setIssuing(false);
     }
   }
+
+  const pct = Math.min(100, watchedPercent);
 
   return (
     <div className="flex flex-col gap-4">
@@ -118,48 +126,51 @@ export function VideoPlayer({
           ref={videoRef}
           src={videoUrl ?? undefined}
           controls
-          className="w-full rounded bg-black"
+          className="aspect-video w-full rounded-lg bg-black"
           onPause={sendHeartbeat}
           onEnded={sendHeartbeat}
         />
       ) : (
-        <div className="aspect-video w-full overflow-hidden rounded bg-black">
+        <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
           <div id={`yt-player-${courseSessionId}`} className="h-full w-full" />
         </div>
       )}
 
-      <div>
-        <div className="h-2 w-full overflow-hidden rounded bg-border-muted">
-          <div
-            className="h-full bg-brand transition-all"
-            style={{ width: `${Math.min(100, watchedPercent)}%` }}
-          />
+      <div className="space-y-1.5">
+        <Progress value={pct} />
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{pct.toFixed(0)}% assistido</span>
+          <span>mínimo: {minWatchPercent}%</span>
         </div>
-        <p className="mt-1 text-xs text-foreground/60">
-          {watchedPercent.toFixed(0)}% assistido — mínimo necessário: {minWatchPercent}%
-        </p>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {completed && !certificateUrl && (
+        <Badge
+          variant="secondary"
+          className="w-fit gap-1 text-emerald-600 dark:text-emerald-400"
+        >
+          <CheckCircle2 />
+          Treinamento concluído
+        </Badge>
+      )}
 
       {certificateUrl ? (
-        <a
-          href={certificateUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="rounded bg-green-600 px-4 py-2 text-center text-white"
-        >
-          Baixar certificado
-        </a>
+        <Button asChild className="w-full sm:w-fit">
+          <a href={certificateUrl} target="_blank" rel="noreferrer">
+            <Download />
+            Baixar certificado
+          </a>
+        </Button>
       ) : (
-        <button
+        <Button
           type="button"
           disabled={!completed || issuing}
           onClick={issueCertificate}
-          className="rounded bg-brand px-4 py-2 text-white transition-colors hover:bg-brand-dark disabled:opacity-40"
+          className="w-full sm:w-fit"
         >
-          {issuing ? "Gerando certificado..." : "Emitir certificado"}
-        </button>
+          {issuing ? <Loader2 className="animate-spin" /> : <Award />}
+          {issuing ? "Gerando certificado…" : "Emitir certificado"}
+        </Button>
       )}
     </div>
   );

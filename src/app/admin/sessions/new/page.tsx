@@ -1,7 +1,21 @@
 import { eq } from "drizzle-orm";
+import { CalendarPlus } from "lucide-react";
+
 import { getDb } from "@/lib/db";
 import { companies, courses } from "@/lib/db/schema";
 import { createSession } from "../actions";
+import { PageHeader } from "@/components/admin/page-header";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default async function NewSessionPage() {
   const db = getDb();
@@ -11,59 +25,90 @@ export default async function NewSessionPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-xl">
-      <h1 className="text-lg font-semibold">Nova turma</h1>
+    <div className="mx-auto w-full max-w-2xl space-y-6">
+      <PageHeader
+        icon={CalendarPlus}
+        title="Nova turma"
+        description="Vincule um treinamento a uma empresa e gere o link de acesso."
+      />
 
-      <form action={createSession} className="mt-4 flex flex-col gap-3 rounded border p-4">
-        <div>
-          <label className="text-sm font-medium">Treinamento</label>
-          <select name="courseId" required className="mt-1 w-full rounded border px-3 py-2">
-            <option value="">Selecione</option>
-            {courseList.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.name}
-              </option>
-            ))}
-          </select>
-        </div>
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle>Dados da turma</CardTitle>
+          <CardDescription>
+            Após criar, você poderá enviar o vídeo e publicar a turma.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={createSession} className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="courseId">Treinamento</Label>
+              <NativeSelect id="courseId" name="courseId" required defaultValue="">
+                <option value="" disabled>
+                  Selecione um treinamento
+                </option>
+                {courseList.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
 
-        <div>
-          <label className="text-sm font-medium">Empresa cliente</label>
-          <select name="companyId" required className="mt-1 w-full rounded border px-3 py-2">
-            <option value="">Selecione</option>
-            {companyList.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.name}
-              </option>
-            ))}
-          </select>
-        </div>
+            <div className="grid gap-2">
+              <Label htmlFor="companyId">Empresa cliente</Label>
+              <NativeSelect id="companyId" name="companyId" required defaultValue="">
+                <option value="" disabled>
+                  Selecione uma empresa
+                </option>
+                {companyList.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
 
-        <div>
-          <label className="text-sm font-medium">Nome da turma</label>
-          <input name="name" required placeholder="Ex: NR-01 - Agosto/2026 - Empresa X" className="mt-1 w-full rounded border px-3 py-2" />
-        </div>
+            <div className="grid gap-2">
+              <Label htmlFor="name">Nome da turma</Label>
+              <Input
+                id="name"
+                name="name"
+                required
+                placeholder="Ex: NR-01 - Agosto/2026 - Empresa X"
+              />
+            </div>
 
-        <div>
-          <label className="text-sm font-medium">Carga horária (horas)</label>
-          <input name="workloadHours" type="number" min={0.5} step={0.5} required className="mt-1 w-full rounded border px-3 py-2" />
-        </div>
+            <div className="grid gap-2">
+              <Label htmlFor="workloadHours">Carga horária (horas)</Label>
+              <Input
+                id="workloadHours"
+                name="workloadHours"
+                type="number"
+                min={0.5}
+                step={0.5}
+                required
+                placeholder="Ex: 2"
+              />
+            </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-sm font-medium">Início (opcional)</label>
-            <input name="startsAt" type="datetime-local" className="mt-1 w-full rounded border px-3 py-2" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Fim (opcional)</label>
-            <input name="endsAt" type="datetime-local" className="mt-1 w-full rounded border px-3 py-2" />
-          </div>
-        </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="startsAt">Início (opcional)</Label>
+                <Input id="startsAt" name="startsAt" type="datetime-local" />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="endsAt">Fim (opcional)</Label>
+                <Input id="endsAt" name="endsAt" type="datetime-local" />
+              </div>
+            </div>
 
-        <button type="submit" className="mt-2 self-start rounded bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
-          Criar turma
-        </button>
-      </form>
+            <div>
+              <SubmitButton pendingText="Criando…">Criar turma</SubmitButton>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

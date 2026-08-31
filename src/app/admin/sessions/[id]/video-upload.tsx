@@ -1,8 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
+import { Loader2, Upload } from "lucide-react";
+import { toast } from "sonner";
+
 import { setSessionVideo } from "../actions";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 function readVideoDuration(file: File): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -18,15 +24,14 @@ function readVideoDuration(file: File): Promise<number> {
 }
 
 export function VideoUpload({ sessionId }: { sessionId: string }) {
-  const [status, setStatus] = useState<"idle" | "uploading" | "done" | "error">("idle");
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const [uploading, setUploading] = useState(false);
 
   async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setStatus("uploading");
-    setError(null);
+    setUploading(true);
     try {
       const durationSeconds = await readVideoDuration(file);
       const blob = await upload(file.name, file, {
@@ -34,26 +39,34 @@ export function VideoUpload({ sessionId }: { sessionId: string }) {
         handleUploadUrl: "/api/blob/upload",
       });
       await setSessionVideo(sessionId, blob.url, durationSeconds);
-      setStatus("done");
+      toast.success("Vídeo enviado com sucesso");
+      router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar vídeo");
-      setStatus("error");
+      toast.error(err instanceof Error ? err.message : "Erro ao enviar vídeo");
+    } finally {
+      setUploading(false);
     }
   }
 
   return (
-    <div className="rounded border p-4">
-      <label className="text-sm font-medium">Vídeo do treinamento</label>
-      <input
+    <div className="rounded-lg border p-4">
+      <Label className="flex items-center gap-2">
+        <Upload className="size-4 text-muted-foreground" />
+        Enviar arquivo de vídeo
+      </Label>
+      <Input
         type="file"
         accept="video/mp4,video/webm,video/quicktime"
         onChange={handleChange}
-        disabled={status === "uploading"}
-        className="mt-2 block text-sm"
+        disabled={uploading}
+        className="mt-2"
       />
-      {status === "uploading" && <p className="mt-1 text-xs text-gray-600">Enviando vídeo...</p>}
-      {status === "done" && <p className="mt-1 text-xs text-green-700">Vídeo enviado. Atualize a página.</p>}
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {uploading && (
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Loader2 className="size-3 animate-spin" />
+          Enviando vídeo…
+        </p>
+      )}
     </div>
   );
 }

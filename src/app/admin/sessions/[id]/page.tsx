@@ -1,12 +1,55 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { and, eq, isNull } from "drizzle-orm";
+import {
+  Archive,
+  CheckCircle2,
+  Download,
+  ExternalLink,
+  FileSpreadsheet,
+  Send,
+  Users,
+  Video,
+} from "lucide-react";
+
 import { getDb } from "@/lib/db";
-import { certificates, companies, courseSessions, courses, participants, viewingProgress } from "@/lib/db/schema";
+import {
+  certificates,
+  companies,
+  courseSessions,
+  courses,
+  participants,
+  viewingProgress,
+} from "@/lib/db/schema";
 import { archiveSession, publishSession, reissueCertificate } from "../actions";
 import { VideoUpload } from "./video-upload";
 import { YoutubeVideoForm } from "./youtube-video-form";
+import { PageHeader } from "@/components/admin/page-header";
+import { SessionStatusBadge } from "@/components/admin/session-status-badge";
+import { CopyButton } from "@/components/copy-button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
-export default async function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SessionDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   const db = getDb();
 
@@ -31,9 +74,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
     .where(eq(courseSessions.id, id))
     .limit(1);
 
-  if (!session) {
-    return <p className="text-sm text-gray-500">Turma não encontrada.</p>;
-  }
+  if (!session) notFound();
 
   const participantsList = await db
     .select({
@@ -49,119 +90,167 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
     .leftJoin(viewingProgress, eq(viewingProgress.participantId, participants.id))
     .leftJoin(
       certificates,
-      and(eq(certificates.participantId, participants.id), isNull(certificates.revokedAt)),
+      and(
+        eq(certificates.participantId, participants.id),
+        isNull(certificates.revokedAt),
+      ),
     )
     .where(eq(participants.courseSessionId, id));
 
   const publicUrl = `/t/${session.accessSlug}`;
+  const hasVideo =
+    (session.videoProvider === "youtube" && session.videoYoutubeId) ||
+    (session.videoProvider === "blob" && session.videoBlobUrl);
+  const videoLabel = !hasVideo
+    ? "Nenhuma fonte de vídeo ainda"
+    : session.videoProvider === "youtube"
+      ? `YouTube · ${session.videoYoutubeId}`
+      : "Arquivo enviado";
+  const videoMinutes = session.videoDurationSeconds
+    ? `${Math.round(session.videoDurationSeconds / 60)} min`
+    : null;
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="text-lg font-semibold">{session.name}</h1>
-      <p className="text-sm text-gray-500">
-        {session.courseName} · {session.companyName} · {Number(session.workloadHours)}h · status: {session.status}
-      </p>
+    <div className="mx-auto w-full max-w-4xl space-y-6">
+      <PageHeader
+        icon={Users}
+        title={session.name}
+        description={`${session.courseName} · ${session.companyName} · ${Number(session.workloadHours)}h`}
+      >
+        <SessionStatusBadge status={session.status} />
+      </PageHeader>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <span className="rounded bg-gray-100 px-3 py-1 text-sm">
-          Link público: <code>{publicUrl}</code>
-        </span>
-        <a
-          href={publicUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="text-sm underline"
-        >
-          Abrir
-        </a>
-        <a href={`/api/sessions/${id}/export`} className="text-sm underline">
-          Exportar CSV
-        </a>
-      </div>
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle>Link de acesso</CardTitle>
+          <CardDescription>Compartilhe com os participantes desta turma.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-2">
+          <code className="rounded-md bg-muted px-2.5 py-1.5 text-xs">{publicUrl}</code>
+          <CopyButton value={publicUrl} label="Copiar link" />
+          <Button asChild variant="outline" size="sm">
+            <a href={publicUrl} target="_blank" rel="noreferrer">
+              <ExternalLink />
+              Abrir
+            </a>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <a href={`/api/sessions/${id}/export`}>
+              <FileSpreadsheet />
+              Exportar CSV
+            </a>
+          </Button>
+        </CardContent>
+      </Card>
 
-      <div className="mt-6 flex flex-col gap-4">
-        <p className="text-sm text-gray-500">
-          Fonte de vídeo atual:{" "}
-          {session.videoProvider === "youtube" && session.videoYoutubeId
-            ? `YouTube (${session.videoYoutubeId})`
-            : session.videoProvider === "blob" && session.videoBlobUrl
-              ? "Arquivo enviado"
-              : "Nenhuma ainda"}
-          {session.videoDurationSeconds ? ` · ${Math.round(session.videoDurationSeconds / 60)} min` : ""}
-        </p>
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle className="flex items-center gap-2">
+            <Video className="size-4 text-muted-foreground" />
+            Vídeo do treinamento
+          </CardTitle>
+          <CardDescription>
+            {videoLabel}
+            {videoMinutes ? ` · ${videoMinutes}` : ""}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <VideoUpload sessionId={session.id} />
+            <YoutubeVideoForm sessionId={session.id} />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {session.status !== "published" && (
+              <form action={publishSession}>
+                <input type="hidden" name="id" value={session.id} />
+                <Button type="submit">
+                  <Send />
+                  Publicar turma
+                </Button>
+              </form>
+            )}
+            {session.status !== "archived" && (
+              <form action={archiveSession}>
+                <input type="hidden" name="id" value={session.id} />
+                <Button type="submit" variant="outline">
+                  <Archive />
+                  Arquivar
+                </Button>
+              </form>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <VideoUpload sessionId={session.id} />
-          <YoutubeVideoForm sessionId={session.id} />
-        </div>
-
-        <div className="flex gap-3">
-          {session.status !== "published" && (
-            <form action={publishSession}>
-              <input type="hidden" name="id" value={session.id} />
-              <button type="submit" className="rounded bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
-                Publicar turma
-              </button>
-            </form>
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle className="flex items-center gap-2">
+            Participantes
+            <Badge variant="secondary">{participantsList.length}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {participantsList.length === 0 ? (
+            <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+              Nenhum participante ainda.
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead className="text-right">% assistido</TableHead>
+                  <TableHead>Concluído</TableHead>
+                  <TableHead className="text-right">Certificado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {participantsList.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-medium">{p.fullName}</TableCell>
+                    <TableCell className="text-muted-foreground">{p.phone}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {p.watchedPercent ? Number(p.watchedPercent).toFixed(0) : 0}%
+                    </TableCell>
+                    <TableCell>
+                      {p.completedAt ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle2 className="size-4" />
+                          Sim
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Não</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {p.certificateUrl ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <Button asChild variant="ghost" size="sm">
+                            <Link href={p.certificateUrl} target="_blank">
+                              <Download />
+                              Baixar
+                            </Link>
+                          </Button>
+                          <form action={reissueCertificate}>
+                            <input type="hidden" name="participantId" value={p.id} />
+                            <input type="hidden" name="sessionId" value={session.id} />
+                            <Button type="submit" variant="ghost" size="sm">
+                              Reemitir
+                            </Button>
+                          </form>
+                        </div>
+                      ) : (
+                        <span className="block text-right text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
-          {session.status !== "archived" && (
-            <form action={archiveSession}>
-              <input type="hidden" name="id" value={session.id} />
-              <button type="submit" className="rounded border px-4 py-2 text-sm">
-                Arquivar
-              </button>
-            </form>
-          )}
-        </div>
-      </div>
-
-      <h2 className="mt-8 text-sm font-semibold">Participantes</h2>
-      <table className="mt-2 w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-gray-500">
-            <th className="py-2">Nome</th>
-            <th>Telefone</th>
-            <th>% assistido</th>
-            <th>Concluído</th>
-            <th>Certificado</th>
-          </tr>
-        </thead>
-        <tbody>
-          {participantsList.map((p) => (
-            <tr key={p.id} className="border-b">
-              <td className="py-2">{p.fullName}</td>
-              <td>{p.phone}</td>
-              <td>{p.watchedPercent ? Number(p.watchedPercent).toFixed(0) : 0}%</td>
-              <td>{p.completedAt ? "Sim" : "Não"}</td>
-              <td>
-                {p.certificateUrl ? (
-                  <div className="flex items-center gap-2">
-                    <Link href={p.certificateUrl} target="_blank" className="underline">
-                      Baixar
-                    </Link>
-                    <form action={reissueCertificate}>
-                      <input type="hidden" name="participantId" value={p.id} />
-                      <input type="hidden" name="sessionId" value={session.id} />
-                      <button type="submit" className="text-xs underline">
-                        Reemitir
-                      </button>
-                    </form>
-                  </div>
-                ) : (
-                  <span className="text-gray-400">—</span>
-                )}
-              </td>
-            </tr>
-          ))}
-          {participantsList.length === 0 && (
-            <tr>
-              <td colSpan={5} className="py-4 text-center text-gray-500">
-                Nenhum participante ainda.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

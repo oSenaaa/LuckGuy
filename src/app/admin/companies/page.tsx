@@ -1,34 +1,95 @@
 import { desc } from "drizzle-orm";
+import { Building2 } from "lucide-react";
+
 import { getDb } from "@/lib/db";
 import { companies } from "@/lib/db/schema";
 import { createCompany } from "./actions";
+import { PageHeader } from "@/components/admin/page-header";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default async function CompaniesPage() {
-  const list = await getDb().select().from(companies).orderBy(desc(companies.createdAt));
+  const list = await getDb()
+    .select()
+    .from(companies)
+    .orderBy(desc(companies.createdAt));
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="text-lg font-semibold">Empresas clientes</h1>
+    <div className="mx-auto w-full max-w-4xl space-y-6">
+      <PageHeader
+        icon={Building2}
+        title="Empresas clientes"
+        description="Cadastre as empresas que contratam os treinamentos."
+      />
 
-      <form action={createCompany} className="mt-4 flex flex-col gap-3 rounded border p-4">
-        <input name="name" required placeholder="Nome da empresa" className="rounded border px-3 py-2" />
-        <input name="cnpj" placeholder="CNPJ (opcional)" className="rounded border px-3 py-2" />
-        <input name="contactEmail" placeholder="E-mail de contato (opcional)" className="rounded border px-3 py-2" />
-        <input name="contactPhone" placeholder="Telefone de contato (opcional)" className="rounded border px-3 py-2" />
-        <button type="submit" className="self-start rounded bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
-          Adicionar empresa
-        </button>
-      </form>
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle>Nova empresa</CardTitle>
+          <CardDescription>
+            Apenas o nome é obrigatório. Os demais campos são opcionais.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={createCompany} className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2 sm:col-span-2">
+              <Label htmlFor="name">Nome da empresa</Label>
+              <Input id="name" name="name" required placeholder="Ex: Construtora Alfa Ltda" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="cnpj">CNPJ</Label>
+              <Input id="cnpj" name="cnpj" placeholder="00.000.000/0000-00" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="contactEmail">E-mail de contato</Label>
+              <Input id="contactEmail" name="contactEmail" type="email" placeholder="contato@empresa.com" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="contactPhone">Telefone de contato</Label>
+              <Input id="contactPhone" name="contactPhone" placeholder="(00) 00000-0000" />
+            </div>
+            <div className="sm:col-span-2">
+              <SubmitButton pendingText="Adicionando…">Adicionar empresa</SubmitButton>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
-      <ul className="mt-6 divide-y">
-        {list.map((company) => (
-          <li key={company.id} className="py-2 text-sm">
-            <span className="font-medium">{company.name}</span>
-            {company.cnpj && <span className="ml-2 text-gray-500">{company.cnpj}</span>}
-          </li>
-        ))}
-        {list.length === 0 && <li className="py-2 text-sm text-gray-500">Nenhuma empresa cadastrada.</li>}
-      </ul>
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle>Empresas cadastradas</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {list.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Nenhuma empresa cadastrada.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {list.map((company) => (
+                <li
+                  key={company.id}
+                  className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3"
+                >
+                  <span className="font-medium">{company.name}</span>
+                  {company.cnpj && (
+                    <span className="text-xs text-muted-foreground">
+                      {company.cnpj}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

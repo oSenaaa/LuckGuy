@@ -1,40 +1,112 @@
 import { desc } from "drizzle-orm";
+import { GraduationCap } from "lucide-react";
+
 import { getDb } from "@/lib/db";
 import { courses } from "@/lib/db/schema";
 import { createCourse } from "./actions";
+import { PageHeader } from "@/components/admin/page-header";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default async function CoursesPage() {
-  const list = await getDb().select().from(courses).orderBy(desc(courses.createdAt));
+  const list = await getDb()
+    .select()
+    .from(courses)
+    .orderBy(desc(courses.createdAt));
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="text-lg font-semibold">Treinamentos</h1>
+    <div className="mx-auto w-full max-w-4xl space-y-6">
+      <PageHeader
+        icon={GraduationCap}
+        title="Treinamentos"
+        description="Catálogo de treinamentos NR disponíveis para montar turmas."
+      />
 
-      <form action={createCourse} className="mt-4 flex flex-col gap-3 rounded border p-4">
-        <input name="name" required placeholder="Nome (ex: NR-01 - Disposições Gerais)" className="rounded border px-3 py-2" />
-        <input name="nrCode" placeholder="Código da NR (ex: NR-01)" className="rounded border px-3 py-2" />
-        <input
-          name="defaultDurationMinutes"
-          type="number"
-          min={1}
-          placeholder="Duração padrão em minutos"
-          className="rounded border px-3 py-2"
-        />
-        <textarea name="description" placeholder="Descrição (opcional)" className="rounded border px-3 py-2" />
-        <button type="submit" className="self-start rounded bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
-          Adicionar treinamento
-        </button>
-      </form>
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle>Novo treinamento</CardTitle>
+          <CardDescription>
+            A duração padrão é sugerida ao criar uma turma.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={createCourse} className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2 sm:col-span-2">
+              <Label htmlFor="name">Nome</Label>
+              <Input
+                id="name"
+                name="name"
+                required
+                placeholder="Ex: NR-01 - Disposições Gerais"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="nrCode">Código da NR</Label>
+              <Input id="nrCode" name="nrCode" placeholder="Ex: NR-01" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="defaultDurationMinutes">Duração padrão (min)</Label>
+              <Input
+                id="defaultDurationMinutes"
+                name="defaultDurationMinutes"
+                type="number"
+                min={1}
+                placeholder="Ex: 120"
+              />
+            </div>
+            <div className="grid gap-2 sm:col-span-2">
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea
+                id="description"
+                name="description"
+                placeholder="Breve descrição do conteúdo (opcional)"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <SubmitButton pendingText="Adicionando…">
+                Adicionar treinamento
+              </SubmitButton>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
-      <ul className="mt-6 divide-y">
-        {list.map((course) => (
-          <li key={course.id} className="py-2 text-sm">
-            <span className="font-medium">{course.name}</span>
-            {course.nrCode && <span className="ml-2 text-gray-500">{course.nrCode}</span>}
-          </li>
-        ))}
-        {list.length === 0 && <li className="py-2 text-sm text-gray-500">Nenhum treinamento cadastrado.</li>}
-      </ul>
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle>Treinamentos cadastrados</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {list.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Nenhum treinamento cadastrado.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {list.map((course) => (
+                <li
+                  key={course.id}
+                  className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3"
+                >
+                  <span className="font-medium">{course.name}</span>
+                  {course.nrCode && (
+                    <Badge variant="outline">{course.nrCode}</Badge>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

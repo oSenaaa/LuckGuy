@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Sora } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Providers } from "@/components/providers";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const sora = Sora({
   variable: "--font-sora",
@@ -20,25 +23,32 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ba0e31",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#171314" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <ClerkProvider
-      appearance={{
-        variables: {
-          colorPrimary: "#ba0e31",
-          fontFamily: "var(--font-sora), system-ui, sans-serif",
-        },
-      }}
+    <html
+      lang="pt-BR"
+      suppressHydrationWarning
+      className={`${sora.variable} h-full antialiased`}
     >
-      <html
-        lang="pt-BR"
-        className={`${sora.variable} h-full antialiased`}
-      >
-        <body className="min-h-full flex flex-col">{children}</body>
-      </html>
-    </ClerkProvider>
+      <body className="min-h-full flex flex-col">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Providers>
+            <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+          </Providers>
+          <Toaster richColors position="top-center" />
+        </ThemeProvider>
+      </body>
+    </html>
   );
 }

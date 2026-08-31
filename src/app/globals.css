@@ -1,14 +1,57 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 /* ---------------------------------------------------------------------------
-   Identidade visual — LÍDER Treinamentos
-   Paleta e tipografia derivadas de lidersaude.com.br
+   LÍDER Treinamentos — design tokens
+   Paleta e tipografia derivadas de lidersaude.com.br, mapeadas nos tokens
+   semânticos do shadcn/ui. Tema alternável via classe .dark (next-themes).
    --------------------------------------------------------------------------- */
 
 :root {
-  --background: #ffffff;
-  --foreground: #4d4d4f;
+  --radius: 0.625rem;
 
+  --background: #ffffff;
+  --foreground: #2f2f31;
+
+  --card: #ffffff;
+  --card-foreground: #2f2f31;
+  --popover: #ffffff;
+  --popover-foreground: #2f2f31;
+
+  --primary: #ba0e31;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #2f2f31;
+  --muted: #f5f5f6;
+  --muted-foreground: #6b6b70;
+  --accent: #f8fafe;
+  --accent-foreground: #ba0e31;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  --border: #e6e8eb;
+  --input: #e6e8eb;
+  --ring: #ba0e31;
+
+  --chart-1: #ba0e31;
+  --chart-2: #e8506b;
+  --chart-3: #f2a0ae;
+  --chart-4: #8a8c8e;
+  --chart-5: #4d4d4f;
+
+  --sidebar: #f8fafe;
+  --sidebar-foreground: #2f2f31;
+  --sidebar-primary: #ba0e31;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef1f8;
+  --sidebar-accent-foreground: #ba0e31;
+  --sidebar-border: #e2e5ea;
+  --sidebar-ring: #ba0e31;
+
+  /* tokens legados usados pelo SVG da logo e por markup público já existente */
   --brand: #ba0e31;
   --brand-dark: #790003;
   --brand-gray: #8a8c8e;
@@ -16,47 +59,128 @@
   --border-muted: #e6e8eb;
 }
 
+.dark {
+  --background: #171314;
+  --foreground: #ededed;
+
+  --card: #1e1a1b;
+  --card-foreground: #ededed;
+  --popover: #1e1a1b;
+  --popover-foreground: #ededed;
+
+  --primary: #e8506b;
+  --primary-foreground: #1a0a0e;
+  --secondary: #2a2426;
+  --secondary-foreground: #ededed;
+  --muted: #241f20;
+  --muted-foreground: #a5a1a2;
+  --accent: #2a2426;
+  --accent-foreground: #f6d5dc;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: #37302f;
+  --input: #40393a;
+  --ring: #e8506b;
+
+  --chart-1: #e8506b;
+  --chart-2: #ba0e31;
+  --chart-3: #f2a0ae;
+  --chart-4: #a1a4a5;
+  --chart-5: #d4d4d4;
+
+  --sidebar: #1b1718;
+  --sidebar-foreground: #ededed;
+  --sidebar-primary: #e8506b;
+  --sidebar-primary-foreground: #1a0a0e;
+  --sidebar-accent: #2a2426;
+  --sidebar-accent-foreground: #f6d5dc;
+  --sidebar-border: #37302f;
+  --sidebar-ring: #e8506b;
+
+  --brand: #e8506b;
+  --brand-dark: #ba0e31;
+  --brand-gray: #a1a4a5;
+  --surface: #211a1c;
+  --border-muted: #37302f;
+}
+
 @theme inline {
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* tokens legados */
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
   --color-brand-gray: var(--brand-gray);
   --color-surface: var(--surface);
   --color-border-muted: var(--border-muted);
 
-  --font-sans: var(--font-sora), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: var(--font-sora), "Sora", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-heading: var(--font-sans);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #171314;
-    --foreground: #ededed;
-
-    --brand: #e8506b;
-    --brand-dark: #ba0e31;
-    --brand-gray: #a1a4a5;
-    --surface: #211a1c;
-    --border-muted: #37302f;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-}
-
-h1,
-h2,
-h3 {
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-::selection {
-  background: var(--brand);
-  color: #fff;
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+  html {
+    @apply font-sans;
+  }
+  h1,
+  h2,
+  h3 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  ::selection {
+    background: var(--brand);
+    color: #fff;
+  }
 }

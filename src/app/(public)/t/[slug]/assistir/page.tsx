@@ -4,6 +4,12 @@ import { getDb } from "@/lib/db";
 import { certificates, courseSessions, courses, viewingProgress } from "@/lib/db/schema";
 import { getParticipantId } from "@/lib/participant-session";
 import { VideoPlayer } from "./video-player";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default async function WatchPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -50,18 +56,24 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
     .limit(1);
 
   return (
-    <section className="mx-auto max-w-2xl px-6 py-12">
-      <h1 className="mb-4 text-xl font-semibold">{session.courseName}</h1>
-      <VideoPlayer
-        courseSessionId={session.id}
-        provider={session.videoProvider}
-        videoUrl={session.videoBlobUrl}
-        youtubeId={session.videoYoutubeId}
-        minWatchPercent={session.minWatchPercent}
-        initialWatchedPercent={progress ? Number(progress.watchedPercent) : 0}
-        initialCompleted={Boolean(progress?.completedAt)}
-        initialCertificateUrl={existingCertificate?.pdfBlobUrl ?? null}
-      />
-    </section>
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle className="text-lg">{session.courseName}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <VideoPlayer
+            courseSessionId={session.id}
+            provider={session.videoProvider}
+            videoUrl={session.videoBlobUrl}
+            youtubeId={session.videoYoutubeId}
+            minWatchPercent={session.minWatchPercent}
+            initialWatchedPercent={progress ? Number(progress.watchedPercent) : 0}
+            initialCompleted={Boolean(progress?.completedAt)}
+            initialCertificateUrl={existingCertificate?.pdfBlobUrl ?? null}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
