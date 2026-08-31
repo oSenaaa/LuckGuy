@@ -3,18 +3,14 @@ import { PenLine } from "lucide-react";
 
 import { getDb } from "@/lib/db";
 import { certificateSignatures } from "@/lib/db/schema";
-import { createSignature, setDefaultSignature } from "./actions";
+import { setDefaultSignature } from "./actions";
+import { SignatureUploadForm } from "./signature-upload-form";
 import { PageHeader } from "@/components/admin/page-header";
-import { SubmitButton } from "@/components/ui/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -33,47 +29,7 @@ export default async function SignaturesPage() {
         description="Assinatura sobreposta no certificado emitido."
       />
 
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>Nova assinatura</CardTitle>
-          <CardDescription>
-            Envie a imagem da assinatura em PNG ou JPEG, de preferência com fundo transparente.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form action={createSignature} className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="coordinatorName">Nome do coordenador</Label>
-              <Input id="coordinatorName" name="coordinatorName" required placeholder="Ex: Maria Souza" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="coordinatorRole">Cargo</Label>
-              <Input
-                id="coordinatorRole"
-                name="coordinatorRole"
-                placeholder="Ex: Coordenadora Técnica"
-              />
-            </div>
-            <div className="grid gap-2 sm:col-span-2">
-              <Label htmlFor="signatureImage">Imagem da assinatura</Label>
-              <Input
-                id="signatureImage"
-                name="signatureImage"
-                type="file"
-                accept="image/png,image/jpeg"
-                required
-              />
-            </div>
-            <Label className="flex items-center gap-2 font-normal sm:col-span-2">
-              <Checkbox name="isDefault" value="on" />
-              Usar como assinatura padrão
-            </Label>
-            <div className="sm:col-span-2">
-              <SubmitButton pendingText="Enviando…">Enviar assinatura</SubmitButton>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      <SignatureUploadForm />
 
       <Card>
         <CardHeader className="border-b">

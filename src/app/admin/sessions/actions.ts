@@ -6,7 +6,9 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { courseSessions } from "@/lib/db/schema";
 import { generateAccessSlug } from "@/lib/access-slug";
+import { UploadedVideoError, verifyUploadedVideo } from "@/lib/blob";
 import { CertificateError, issueCertificate } from "@/lib/certificate/issue";
+import { VIDEO_MAX_DURATION_SECONDS } from "@/lib/upload-rules";
 import { requireAdmin } from "@/lib/require-admin";
 
 export async function createSession(formData: FormData) {
@@ -42,17 +44,46 @@ export async function createSession(formData: FormData) {
 
 export async function setSessionVideo(sessionId: string, videoBlobUrl: string, videoDurationSeconds: number) {
   await requireAdmin();
-  await getDb()
+  if (
+    !Number.isInteger(videoDurationSeconds) ||
+    videoDurationSeconds <= 0 ||
+    videoDurationSeconds > VIDEO_MAX_DURATION_SECONDS
+  ) {
+    return { ok: false as const, error: "A duração do vídeo é inválida." };
+  }
+
+  let verifiedVideoUrl: string;
+  try {
+    const video = await verifyUploadedVideo(videoBlobUrl, sessionId);
+    verifiedVideoUrl = video.url;
+  } catch (error) {
+    console.error("Falha ao validar o vídeo da turma", error);
+    return {
+      ok: false as const,
+      error:
+        error instanceof UploadedVideoError
+          ? error.message
+          : "Não foi possível confirmar o vídeo enviado.",
+    };
+  }
+
+  const updatedSessions = await getDb()
     .update(courseSessions)
     .set({
       videoProvider: "blob",
-      videoBlobUrl,
+      videoBlobUrl: verifiedVideoUrl,
       videoYoutubeId: null,
       videoDurationSeconds,
       updatedAt: new Date(),
     })
-    .where(eq(courseSessions.id, sessionId));
+    .where(eq(courseSessions.id, sessionId))
+    .returning({ id: courseSessions.id });
+  if (updatedSessions.length === 0) {
+    return { ok: false as const, error: "Turma não encontrada." };
+  }
+
   revalidatePath(`/admin/sessions/${sessionId}`);
+  return { ok: true as const };
 }
 
 export async function setSessionVideoYoutube(sessionId: string, videoYoutubeId: string, videoDurationSeconds: number) {

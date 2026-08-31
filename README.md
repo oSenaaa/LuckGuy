@@ -67,7 +67,7 @@ O que caracteriza o **MVP atual**: o caminho completo "criar turma → colaborad
 4. Concluído o vídeo, o client chama `POST /api/certificates/issue` (`runtime = "nodejs"`) → `issueCertificate` (`src/lib/certificate/issue.ts`): idempotente, exige `viewing_progress.completedAt`, resolve modelo e assinatura (da turma ou o *default*), gera o PDF, sobe em `certificates/<code>.pdf` e grava a linha em `certificates` com *snapshots* de nome/curso/carga horária.
 5. `GET /verificar/[codigo]` — verificação pública: nome, curso, carga horária, data de emissão e status de revogação.
 
-**Fluxo do admin** — tudo sob `src/app/admin/`, protegido pelo `src/proxy.ts` (Clerk) e por `requireAdmin()` em cada *server action*. CRUD de empresas, cursos, turmas, modelos e assinaturas; upload de vídeo via `POST /api/blob/upload` (client upload do Vercel Blob) ou link do YouTube; export CSV via `GET /api/sessions/[id]/export`.
+**Fluxo do admin** — tudo sob `src/app/admin/`, protegido pelo `src/proxy.ts` (Clerk) e por `requireAdmin()` em cada *server action*. CRUD de empresas, cursos, turmas, modelos e assinaturas; vídeos e imagens são enviados diretamente do navegador ao Vercel Blob por tokens emitidos em `POST /api/blob/upload`, evitando os limites de corpo das Functions; vídeo também pode ser configurado por link do YouTube; export CSV via `GET /api/sessions/[id]/export`.
 
 ---
 

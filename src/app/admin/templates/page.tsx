@@ -3,18 +3,14 @@ import { FileImage } from "lucide-react";
 
 import { getDb } from "@/lib/db";
 import { certificateTemplates } from "@/lib/db/schema";
-import { createTemplate, setDefaultTemplate } from "./actions";
+import { setDefaultTemplate } from "./actions";
+import { TemplateUploadForm } from "./template-upload-form";
 import { PageHeader } from "@/components/admin/page-header";
-import { SubmitButton } from "@/components/ui/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -33,40 +29,7 @@ export default async function TemplatesPage() {
         description="Imagem de fundo padrão do certificado emitido aos participantes."
       />
 
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>Novo modelo</CardTitle>
-          <CardDescription>
-            Envie a imagem de fundo (com a margem para assinatura já desenhada). Nome, treinamento,
-            carga horária e código de validação são sobrepostos automaticamente.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form action={createTemplate} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Nome do modelo</Label>
-              <Input id="name" name="name" required placeholder="Ex: Padrão 2026" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="backgroundImage">Imagem de fundo</Label>
-              <Input
-                id="backgroundImage"
-                name="backgroundImage"
-                type="file"
-                accept="image/png,image/jpeg"
-                required
-              />
-            </div>
-            <Label className="flex items-center gap-2 font-normal">
-              <Checkbox name="isDefault" value="on" />
-              Usar como modelo padrão
-            </Label>
-            <div>
-              <SubmitButton pendingText="Enviando…">Enviar modelo</SubmitButton>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      <TemplateUploadForm />
 
       <Card>
         <CardHeader className="border-b">

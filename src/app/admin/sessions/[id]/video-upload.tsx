@@ -5,10 +5,17 @@ import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
-
+import {
+  VIDEO_MAX_SIZE_BYTES,
+  VIDEO_UPLOAD_PREFIX,
+  isVideoContentType,
+  sanitizeUploadFilename,
+} from "@/lib/upload-rules";
 import { setSessionVideo } from "../actions";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+
+const MULTIPART_UPLOAD_THRESHOLD_BYTES = 100 * 1024 * 1024;
 
 function readVideoDuration(file: File): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -33,12 +40,26 @@ export function VideoUpload({ sessionId }: { sessionId: string }) {
 
     setUploading(true);
     try {
+      if (!isVideoContentType(file.type)) {
+        throw new Error("Use um vídeo MP4, WebM ou MOV.");
+      }
+      if (file.size > VIDEO_MAX_SIZE_BYTES) {
+        throw new Error("O vídeo deve ter no máximo 5 GB.");
+      }
+
       const durationSeconds = await readVideoDuration(file);
-      const blob = await upload(file.name, file, {
-        access: "public",
-        handleUploadUrl: "/api/blob/upload",
-      });
-      await setSessionVideo(sessionId, blob.url, durationSeconds);
+      const blob = await upload(
+        `${VIDEO_UPLOAD_PREFIX}${sessionId}/${Date.now()}-${sanitizeUploadFilename(file.name)}`,
+        file,
+        {
+          access: "public",
+          contentType: file.type,
+          handleUploadUrl: "/api/blob/upload",
+          multipart: file.size > MULTIPART_UPLOAD_THRESHOLD_BYTES,
+        },
+      );
+      const result = await setSessionVideo(sessionId, blob.url, durationSeconds);
+      if (!result.ok) throw new Error(result.error);
       toast.success("Vídeo enviado com sucesso");
       router.refresh();
     } catch (err) {
