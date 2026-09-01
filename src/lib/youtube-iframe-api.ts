@@ -2,6 +2,12 @@ export type YoutubePlayer = {
   getDuration: () => number;
   getCurrentTime: () => number;
   getPlayerState: () => number;
+  getAvailablePlaybackRates: () => number[];
+  getIframe: () => HTMLIFrameElement;
+  playVideo: () => void;
+  pauseVideo: () => void;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
+  setPlaybackRate: (suggestedRate: number) => void;
   destroy: () => void;
 };
 
@@ -14,13 +20,28 @@ export const YOUTUBE_PLAYER_STATE = {
 type YoutubePlayerEvents = {
   onReady?: (event: { target: YoutubePlayer }) => void;
   onStateChange?: (event: { data: number; target: YoutubePlayer }) => void;
+  onPlaybackRateChange?: (event: { data: number; target: YoutubePlayer }) => void;
   onError?: () => void;
+};
+
+type YoutubePlayerVars = {
+  controls?: 0 | 1;
+  disablekb?: 0 | 1;
+  fs?: 0 | 1;
+  iv_load_policy?: 1 | 3;
+  playsinline?: 0 | 1;
+  rel?: 0 | 1;
+  start?: number;
 };
 
 type YoutubeNamespace = {
   Player: new (
     element: string,
-    options: { videoId: string; events: YoutubePlayerEvents },
+    options: {
+      videoId: string;
+      events: YoutubePlayerEvents;
+      playerVars?: YoutubePlayerVars;
+    },
   ) => YoutubePlayer;
 };
 
@@ -51,6 +72,11 @@ export function loadYoutubeIframeApi(): Promise<void> {
   return apiLoadPromise;
 }
 
-export function createYoutubePlayer(containerId: string, videoId: string, events: YoutubePlayerEvents) {
-  return new window.YT!.Player(containerId, { videoId, events });
+export function createYoutubePlayer(
+  containerId: string,
+  videoId: string,
+  events: YoutubePlayerEvents,
+  playerVars?: YoutubePlayerVars,
+) {
+  return new window.YT!.Player(containerId, { videoId, events, playerVars });
 }

@@ -75,6 +75,7 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
             videoUrl={session.videoBlobUrl}
             youtubeId={session.videoYoutubeId}
             minWatchPercent={session.minWatchPercent}
+            initialCurrentTime={progress?.currentTimeSeconds ?? 0}
             initialWatchedPercent={progress ? Number(progress.watchedPercent) : 0}
             initialCompleted={Boolean(progress?.completedAt)}
             initialCertificateUrl={existingCertificate?.pdfBlobUrl ?? null}

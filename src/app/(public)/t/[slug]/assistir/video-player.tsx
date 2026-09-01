@@ -1,7 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Award, CheckCircle2, Download, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Award,
+  CheckCircle2,
+  Download,
+  Gauge,
+  Loader2,
+  Pause,
+  Play,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   createYoutubePlayer,
@@ -11,7 +19,21 @@ import {
 } from "@/lib/youtube-iframe-api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
+
+const BLOB_PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+const MAX_PLAYBACK_RATE = 2;
+const SEEK_EPSILON_SECONDS = 0.05;
+const YOUTUBE_SEEK_TOLERANCE_SECONDS = 1;
+const PROGRESS_RECONCILIATION_TOLERANCE_SECONDS = 2;
 
 type Props = {
   courseSessionId: string;
@@ -19,10 +41,112 @@ type Props = {
   videoUrl: string | null;
   youtubeId: string | null;
   minWatchPercent: number;
+  initialCurrentTime: number;
   initialWatchedPercent: number;
   initialCompleted: boolean;
   initialCertificateUrl: string | null;
 };
+
+type PlayerControlsProps = {
+  availablePlaybackRates: number[];
+  currentTime: number;
+  duration: number;
+  isPlaying: boolean;
+  playbackRate: number;
+  ready: boolean;
+  onPlaybackRateChange: (rate: number) => void;
+  onTogglePlayback: () => void;
+};
+
+type PendingYoutubeSeek = {
+  target: number;
+  resumePlayback: boolean;
+};
+
+function formatTime(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+
+  const totalSeconds = Math.floor(seconds);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const remainingSeconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${remainingSeconds
+      .toString()
+      .padStart(2, "0")}`;
+  }
+
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
+
+function formatPlaybackRate(rate: number) {
+  return `${rate.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}x`;
+}
+
+function PlayerControls({
+  availablePlaybackRates,
+  currentTime,
+  duration,
+  isPlaying,
+  playbackRate,
+  ready,
+  onPlaybackRateChange,
+  onTogglePlayback,
+}: PlayerControlsProps) {
+  return (
+    <div
+      role="group"
+      aria-label="Controles do vídeo"
+      className="absolute inset-x-0 bottom-0 z-20 flex items-center gap-2 bg-linear-to-t from-black/90 via-black/60 to-transparent px-3 pb-3 pt-8 text-white"
+    >
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-lg"
+        disabled={!ready}
+        onClick={onTogglePlayback}
+        aria-label={isPlaying ? "Pausar vídeo" : "Reproduzir vídeo"}
+        className="text-white hover:bg-white/15 hover:text-white focus-visible:border-white/50 focus-visible:ring-white/40"
+      >
+        {isPlaying ? <Pause /> : <Play />}
+      </Button>
+
+      <span className="text-xs tabular-nums text-white/85" aria-hidden="true">
+        {formatTime(currentTime)} / {formatTime(duration)}
+      </span>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={!ready}
+            aria-label={`Velocidade de reprodução: ${formatPlaybackRate(playbackRate)}`}
+            className="ml-auto min-w-18 text-white hover:bg-white/15 hover:text-white focus-visible:border-white/50 focus-visible:ring-white/40"
+          >
+            <Gauge />
+            {formatPlaybackRate(playbackRate)}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="top" align="end" className="min-w-32">
+          <DropdownMenuLabel>Velocidade</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={String(playbackRate)}
+            onValueChange={(value) => onPlaybackRateChange(Number(value))}
+          >
+            {availablePlaybackRates.map((rate) => (
+              <DropdownMenuRadioItem key={rate} value={String(rate)}>
+                {formatPlaybackRate(rate)}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
 
 export function VideoPlayer({
   courseSessionId,
@@ -30,71 +154,440 @@ export function VideoPlayer({
   videoUrl,
   youtubeId,
   minWatchPercent,
+  initialCurrentTime,
   initialWatchedPercent,
   initialCompleted,
   initialCertificateUrl,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const youtubePlayerRef = useRef<YoutubePlayer | null>(null);
+  const lastAllowedBlobTimeRef = useRef(Math.max(0, initialCurrentTime));
+  const internalBlobSeekTargetRef = useRef<number | null>(null);
+  const correctingBlobSeekTargetRef = useRef<number | null>(null);
+  const heartbeatRequestSequenceRef = useRef(0);
+  const lastAppliedHeartbeatSequenceRef = useRef(0);
+  const lastAllowedYoutubeTimeRef = useRef(Math.max(0, initialCurrentTime));
+  const lastYoutubeSampleAtRef = useRef<number | null>(null);
+  const pendingYoutubeSeekRef = useRef<PendingYoutubeSeek | null>(null);
+  const youtubePlaybackRateRef = useRef(1);
+  const hasYoutubePlaybackStartedRef = useRef(false);
+  const lastYoutubePlayerStateRef = useRef<number | null>(null);
+  const suppressNextYoutubePauseHeartbeatRef = useRef(false);
   const [watchedPercent, setWatchedPercent] = useState(initialWatchedPercent);
   const [completed, setCompleted] = useState(initialCompleted);
   const [certificateUrl, setCertificateUrl] = useState(initialCertificateUrl);
   const [issuing, setIssuing] = useState(false);
+  const [isPlayingState, setIsPlayingState] = useState(false);
+  const [playerReady, setPlayerReady] = useState(provider === "blob");
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [availablePlaybackRates, setAvailablePlaybackRates] = useState<number[]>(
+    provider === "blob" ? BLOB_PLAYBACK_RATES : [1],
+  );
+  const [currentTime, setCurrentTime] = useState(Math.max(0, initialCurrentTime));
+  const [duration, setDuration] = useState(0);
 
-  function getCurrentTime() {
+  const getCurrentTime = useCallback(() => {
     if (provider === "blob") return videoRef.current?.currentTime ?? 0;
     return youtubePlayerRef.current?.getCurrentTime() ?? 0;
-  }
+  }, [provider]);
 
-  function isPlaying() {
-    if (provider === "blob") return videoRef.current ? !videoRef.current.paused : false;
+  const isPlaying = useCallback(() => {
+    if (provider === "blob") {
+      return videoRef.current ? !videoRef.current.paused : false;
+    }
     return youtubePlayerRef.current?.getPlayerState() === YOUTUBE_PLAYER_STATE.PLAYING;
-  }
+  }, [provider]);
 
-  async function sendHeartbeat() {
+  const reconcilePlaybackTime = useCallback(
+    (acceptedCurrentTime: number, reportedCurrentTime: number) => {
+      if (
+        !Number.isFinite(acceptedCurrentTime) ||
+        reportedCurrentTime <=
+          acceptedCurrentTime + PROGRESS_RECONCILIATION_TOLERANCE_SECONDS
+      ) {
+        return;
+      }
+
+      if (provider === "blob") {
+        const video = videoRef.current;
+        if (!video) return;
+
+        internalBlobSeekTargetRef.current = acceptedCurrentTime;
+        lastAllowedBlobTimeRef.current = acceptedCurrentTime;
+        video.currentTime = acceptedCurrentTime;
+      } else {
+        const player = youtubePlayerRef.current;
+        if (!player) return;
+
+        const resumePlayback =
+          player.getPlayerState() === YOUTUBE_PLAYER_STATE.PLAYING;
+        if (resumePlayback) {
+          suppressNextYoutubePauseHeartbeatRef.current = true;
+          player.pauseVideo();
+        }
+        pendingYoutubeSeekRef.current = {
+          target: acceptedCurrentTime,
+          resumePlayback,
+        };
+        lastAllowedYoutubeTimeRef.current = acceptedCurrentTime;
+        lastYoutubeSampleAtRef.current = performance.now();
+        player.seekTo(acceptedCurrentTime, false);
+        setCurrentTime(acceptedCurrentTime);
+      }
+
+      toast.info("O vídeo voltou ao último ponto de reprodução validado.");
+    },
+    [provider],
+  );
+
+  const sendHeartbeat = useCallback(async () => {
+    const requestSequence = ++heartbeatRequestSequenceRef.current;
+    const reportedCurrentTime = getCurrentTime();
+
     try {
       const res = await fetch("/api/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseSessionId, currentTime: getCurrentTime() }),
+        body: JSON.stringify({ courseSessionId, currentTime: reportedCurrentTime }),
       });
       if (!res.ok) return;
       const data = await res.json();
-      setWatchedPercent(data.watchedPercent);
-      setCompleted(data.completed);
+      if (requestSequence < lastAppliedHeartbeatSequenceRef.current) return;
+
+      lastAppliedHeartbeatSequenceRef.current = requestSequence;
+      setWatchedPercent((previous) => Math.max(previous, data.watchedPercent));
+      setCompleted((previous) => previous || data.completed);
+      reconcilePlaybackTime(data.acceptedCurrentTime, reportedCurrentTime);
     } catch {
       // heartbeat failures are non-fatal; next tick retries
     }
-  }
+  }, [courseSessionId, getCurrentTime, reconcilePlaybackTime]);
 
   useEffect(() => {
     if (provider !== "youtube" || !youtubeId) return;
 
     let cancelled = false;
+    let player: YoutubePlayer | null = null;
+
     loadYoutubeIframeApi().then(() => {
       if (cancelled) return;
-      youtubePlayerRef.current = createYoutubePlayer(`yt-player-${courseSessionId}`, youtubeId, {
-        onStateChange: (event) => {
-          if (event.data === YOUTUBE_PLAYER_STATE.PAUSED || event.data === YOUTUBE_PLAYER_STATE.ENDED) {
-            sendHeartbeat();
-          }
+
+      player = createYoutubePlayer(
+        `yt-player-${courseSessionId}`,
+        youtubeId,
+        {
+          onReady: (event) => {
+            if (cancelled) return;
+
+            youtubePlayerRef.current = event.target;
+            event.target.getIframe().setAttribute("tabindex", "-1");
+
+            const videoDuration = event.target.getDuration();
+            const requestedResumeTime = Math.max(0, initialCurrentTime);
+            const resumeAt =
+              videoDuration > 0
+                ? Math.min(requestedResumeTime, videoDuration)
+                : requestedResumeTime;
+            const supportedRates = event.target
+              .getAvailablePlaybackRates()
+              .filter(
+                (rate) => Number.isFinite(rate) && rate > 0 && rate <= MAX_PLAYBACK_RATE,
+              );
+
+            setCurrentTime(resumeAt);
+            setDuration(videoDuration);
+            setAvailablePlaybackRates(supportedRates.length > 0 ? supportedRates : [1]);
+            lastAllowedYoutubeTimeRef.current = resumeAt;
+            lastYoutubeSampleAtRef.current = performance.now();
+            lastYoutubePlayerStateRef.current = event.target.getPlayerState();
+            setPlayerReady(true);
+          },
+          onStateChange: (event) => {
+            const observedTime = event.target.getCurrentTime();
+            const now = performance.now();
+            const playing = event.data === YOUTUBE_PLAYER_STATE.PLAYING;
+            setIsPlayingState(playing);
+            setCurrentTime(observedTime);
+
+            if (playing && !hasYoutubePlaybackStartedRef.current) {
+              hasYoutubePlaybackStartedRef.current = true;
+              lastAllowedYoutubeTimeRef.current = observedTime;
+            } else if (pendingYoutubeSeekRef.current === null) {
+              const sampledAt = lastYoutubeSampleAtRef.current ?? now;
+              const elapsedSeconds = Math.max(0, (now - sampledAt) / 1000);
+              const allowedAdvance =
+                lastYoutubePlayerStateRef.current === YOUTUBE_PLAYER_STATE.PLAYING
+                  ? elapsedSeconds * youtubePlaybackRateRef.current
+                  : 0;
+              const previousTime = lastAllowedYoutubeTimeRef.current;
+              const plausiblePosition =
+                observedTime <=
+                  previousTime + allowedAdvance + YOUTUBE_SEEK_TOLERANCE_SECONDS &&
+                observedTime >= previousTime - YOUTUBE_SEEK_TOLERANCE_SECONDS;
+
+              if (plausiblePosition) {
+                lastAllowedYoutubeTimeRef.current = observedTime;
+              }
+            }
+
+            lastYoutubeSampleAtRef.current = now;
+            lastYoutubePlayerStateRef.current = event.data;
+
+            if (
+              event.data === YOUTUBE_PLAYER_STATE.PAUSED ||
+              event.data === YOUTUBE_PLAYER_STATE.ENDED
+            ) {
+              if (
+                event.data === YOUTUBE_PLAYER_STATE.PAUSED &&
+                suppressNextYoutubePauseHeartbeatRef.current
+              ) {
+                suppressNextYoutubePauseHeartbeatRef.current = false;
+              } else {
+                void sendHeartbeat();
+              }
+            }
+          },
+          onPlaybackRateChange: (event) => {
+            if (event.data <= MAX_PLAYBACK_RATE) {
+              youtubePlaybackRateRef.current = event.data;
+              setPlaybackRate(event.data);
+            }
+          },
         },
-      });
+        {
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          iv_load_policy: 3,
+          playsinline: 1,
+          rel: 0,
+          start: Math.max(0, Math.floor(initialCurrentTime)),
+        },
+      );
+      youtubePlayerRef.current = player;
     });
 
     return () => {
       cancelled = true;
+      player?.destroy();
+      if (youtubePlayerRef.current === player) youtubePlayerRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider, youtubeId, courseSessionId]);
+  }, [courseSessionId, initialCurrentTime, provider, sendHeartbeat, youtubeId]);
+
+  useEffect(() => {
+    if (provider !== "youtube") return;
+
+    const interval = setInterval(() => {
+      const player = youtubePlayerRef.current;
+      if (!player) return;
+
+      const nextCurrentTime = player.getCurrentTime();
+      const nextDuration = player.getDuration();
+      const playerState = player.getPlayerState();
+      const now = performance.now();
+
+      if (
+        Number.isFinite(nextCurrentTime) &&
+        (playerState === YOUTUBE_PLAYER_STATE.PLAYING ||
+          playerState === YOUTUBE_PLAYER_STATE.PAUSED ||
+          playerState === YOUTUBE_PLAYER_STATE.ENDED)
+      ) {
+        const pendingSeek = pendingYoutubeSeekRef.current;
+        if (pendingSeek !== null) {
+          if (
+            Math.abs(nextCurrentTime - pendingSeek.target) <=
+            YOUTUBE_SEEK_TOLERANCE_SECONDS
+          ) {
+            pendingYoutubeSeekRef.current = null;
+            lastAllowedYoutubeTimeRef.current = nextCurrentTime;
+            setCurrentTime(nextCurrentTime);
+            if (pendingSeek.resumePlayback) player.playVideo();
+          } else {
+            player.seekTo(pendingSeek.target, false);
+            setCurrentTime(pendingSeek.target);
+          }
+          lastYoutubeSampleAtRef.current = now;
+        } else {
+          const sampledAt = lastYoutubeSampleAtRef.current ?? now;
+          const elapsedSeconds = Math.max(0, (now - sampledAt) / 1000);
+          const allowedAdvance =
+            playerState === YOUTUBE_PLAYER_STATE.PLAYING
+              ? elapsedSeconds * youtubePlaybackRateRef.current
+              : 0;
+          const previousTime = lastAllowedYoutubeTimeRef.current;
+          const jumped =
+            nextCurrentTime >
+              previousTime + allowedAdvance + YOUTUBE_SEEK_TOLERANCE_SECONDS ||
+            nextCurrentTime < previousTime - YOUTUBE_SEEK_TOLERANCE_SECONDS;
+
+          if (jumped) {
+            const resumePlayback =
+              playerState === YOUTUBE_PLAYER_STATE.PLAYING;
+            if (resumePlayback) {
+              suppressNextYoutubePauseHeartbeatRef.current = true;
+              player.pauseVideo();
+            }
+            pendingYoutubeSeekRef.current = {
+              target: previousTime,
+              resumePlayback,
+            };
+            player.seekTo(previousTime, false);
+            setCurrentTime(previousTime);
+          } else {
+            lastAllowedYoutubeTimeRef.current = nextCurrentTime;
+            setCurrentTime(nextCurrentTime);
+          }
+          lastYoutubeSampleAtRef.current = now;
+        }
+      }
+      if (Number.isFinite(nextDuration) && nextDuration > 0) setDuration(nextDuration);
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [provider]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (isPlaying()) sendHeartbeat();
+      if (isPlaying()) void sendHeartbeat();
     }, 10000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isPlaying, sendHeartbeat]);
+
+  const togglePlayback = useCallback(async () => {
+    if (!playerReady) return;
+
+    if (provider === "blob") {
+      const video = videoRef.current;
+      if (!video) return;
+
+      if (video.paused) {
+        if (video.ended) {
+          internalBlobSeekTargetRef.current = 0;
+          lastAllowedBlobTimeRef.current = 0;
+          video.currentTime = 0;
+        }
+
+        try {
+          await video.play();
+        } catch {
+          toast.error("Não foi possível reproduzir o vídeo");
+        }
+      } else {
+        video.pause();
+      }
+      return;
+    }
+
+    const player = youtubePlayerRef.current;
+    if (!player) return;
+
+    if (player.getPlayerState() === YOUTUBE_PLAYER_STATE.PLAYING) {
+      player.pauseVideo();
+    } else {
+      if (player.getPlayerState() === YOUTUBE_PLAYER_STATE.ENDED) {
+        pendingYoutubeSeekRef.current = null;
+        lastAllowedYoutubeTimeRef.current = 0;
+        lastYoutubeSampleAtRef.current = performance.now();
+        player.seekTo(0, true);
+        setCurrentTime(0);
+      }
+      player.playVideo();
+    }
+  }, [playerReady, provider]);
+
+  function changePlaybackRate(rate: number) {
+    if (!availablePlaybackRates.includes(rate) || rate > MAX_PLAYBACK_RATE) return;
+
+    if (provider === "blob") {
+      const video = videoRef.current;
+      if (!video) return;
+      video.playbackRate = rate;
+      return;
+    }
+
+    youtubePlayerRef.current?.setPlaybackRate(rate);
+  }
+
+  function syncBlobTime(video: HTMLVideoElement) {
+    setCurrentTime(video.currentTime);
+    if (Number.isFinite(video.duration)) setDuration(video.duration);
+  }
+
+  function handleBlobLoadedMetadata(video: HTMLVideoElement) {
+    const resumeAt = Math.min(Math.max(0, initialCurrentTime), video.duration);
+    lastAllowedBlobTimeRef.current = resumeAt;
+    syncBlobTime(video);
+
+    if (resumeAt > 0) {
+      internalBlobSeekTargetRef.current = resumeAt;
+      video.currentTime = resumeAt;
+    }
+  }
+
+  function handleBlobTimeUpdate(video: HTMLVideoElement) {
+    if (
+      !video.seeking &&
+      internalBlobSeekTargetRef.current === null &&
+      correctingBlobSeekTargetRef.current === null
+    ) {
+      lastAllowedBlobTimeRef.current = video.currentTime;
+    }
+    syncBlobTime(video);
+  }
+
+  function handleBlobSeeking(video: HTMLVideoElement) {
+    const correctionTarget = correctingBlobSeekTargetRef.current;
+    if (correctionTarget !== null) {
+      if (Math.abs(video.currentTime - correctionTarget) >= SEEK_EPSILON_SECONDS) {
+        video.currentTime = correctionTarget;
+      }
+      return;
+    }
+
+    const internalTarget = internalBlobSeekTargetRef.current;
+    if (
+      internalTarget !== null &&
+      Math.abs(video.currentTime - internalTarget) < SEEK_EPSILON_SECONDS
+    ) {
+      return;
+    }
+
+    const allowedTime = lastAllowedBlobTimeRef.current;
+    if (Math.abs(video.currentTime - allowedTime) < SEEK_EPSILON_SECONDS) return;
+
+    correctingBlobSeekTargetRef.current = allowedTime;
+    video.currentTime = allowedTime;
+  }
+
+  function handleBlobSeeked(video: HTMLVideoElement) {
+    const internalTarget = internalBlobSeekTargetRef.current;
+    if (
+      internalTarget !== null &&
+      Math.abs(video.currentTime - internalTarget) < SEEK_EPSILON_SECONDS
+    ) {
+      internalBlobSeekTargetRef.current = null;
+      lastAllowedBlobTimeRef.current = video.currentTime;
+    }
+
+    const correctionTarget = correctingBlobSeekTargetRef.current;
+    if (correctionTarget !== null) {
+      if (Math.abs(video.currentTime - correctionTarget) >= SEEK_EPSILON_SECONDS) {
+        video.currentTime = correctionTarget;
+        return;
+      }
+      correctingBlobSeekTargetRef.current = null;
+    }
+
+    syncBlobTime(video);
+  }
+
+  function handleBlobRateChange(video: HTMLVideoElement) {
+    if (!BLOB_PLAYBACK_RATES.includes(video.playbackRate)) {
+      video.playbackRate = 1;
+      return;
+    }
+    setPlaybackRate(video.playbackRate);
+  }
 
   async function issueCertificate() {
     setIssuing(true);
@@ -109,9 +602,7 @@ export function VideoPlayer({
       setCertificateUrl(data.pdfUrl);
       toast.success("Certificado emitido com sucesso");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Erro ao emitir certificado",
-      );
+      toast.error(err instanceof Error ? err.message : "Erro ao emitir certificado");
     } finally {
       setIssuing(false);
     }
@@ -121,20 +612,59 @@ export function VideoPlayer({
 
   return (
     <div className="flex flex-col gap-4">
-      {provider === "blob" ? (
-        <video
-          ref={videoRef}
-          src={videoUrl ?? undefined}
-          controls
-          className="aspect-video w-full rounded-lg bg-black"
-          onPause={sendHeartbeat}
-          onEnded={sendHeartbeat}
+      <div
+        className="relative aspect-video w-full overflow-hidden rounded-lg bg-black"
+        onContextMenu={(event) => event.preventDefault()}
+      >
+        {provider === "blob" ? (
+          <video
+            ref={videoRef}
+            src={videoUrl ?? undefined}
+            preload="metadata"
+            playsInline
+            disablePictureInPicture
+            disableRemotePlayback
+            controlsList="nodownload nofullscreen noremoteplayback"
+            aria-label="Vídeo do treinamento"
+            className="h-full w-full bg-black object-contain"
+            onLoadedMetadata={(event) => handleBlobLoadedMetadata(event.currentTarget)}
+            onTimeUpdate={(event) => handleBlobTimeUpdate(event.currentTarget)}
+            onSeeking={(event) => handleBlobSeeking(event.currentTarget)}
+            onSeeked={(event) => handleBlobSeeked(event.currentTarget)}
+            onRateChange={(event) => handleBlobRateChange(event.currentTarget)}
+            onPlay={() => setIsPlayingState(true)}
+            onPause={() => {
+              setIsPlayingState(false);
+              void sendHeartbeat();
+            }}
+            onEnded={() => {
+              setIsPlayingState(false);
+              void sendHeartbeat();
+            }}
+          />
+        ) : (
+          <div className="h-full w-full overflow-hidden bg-black">
+            <div id={`yt-player-${courseSessionId}`} className="h-full w-full" />
+          </div>
+        )}
+
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 z-10 cursor-pointer"
+          onClick={() => void togglePlayback()}
         />
-      ) : (
-        <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
-          <div id={`yt-player-${courseSessionId}`} className="h-full w-full" />
-        </div>
-      )}
+
+        <PlayerControls
+          availablePlaybackRates={availablePlaybackRates}
+          currentTime={currentTime}
+          duration={duration}
+          isPlaying={isPlayingState}
+          playbackRate={playbackRate}
+          ready={playerReady}
+          onPlaybackRateChange={changePlaybackRate}
+          onTogglePlayback={() => void togglePlayback()}
+        />
+      </div>
 
       <div className="space-y-1.5">
         <Progress value={pct} />
