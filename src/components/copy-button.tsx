@@ -6,6 +6,23 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 
+async function writeToClipboard(value: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const input = document.createElement("textarea");
+  input.value = value;
+  input.style.position = "fixed";
+  input.style.opacity = "0";
+  document.body.appendChild(input);
+  input.select();
+  const copied = document.execCommand("copy");
+  input.remove();
+  if (!copied) throw new Error("Clipboard unavailable");
+}
+
 export function CopyButton({
   value,
   label = "Copiar",
@@ -17,7 +34,10 @@ export function CopyButton({
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(value);
+      const valueToCopy = value.startsWith("/")
+        ? new URL(value, window.location.origin).href
+        : value;
+      await writeToClipboard(valueToCopy);
       setCopied(true);
       toast.success("Link copiado");
       setTimeout(() => setCopied(false), 1500);

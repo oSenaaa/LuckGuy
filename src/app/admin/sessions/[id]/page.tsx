@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { and, eq, isNull } from "drizzle-orm";
 import {
@@ -97,7 +98,11 @@ export default async function SessionDetailPage({
     )
     .where(eq(participants.courseSessionId, id));
 
-  const publicUrl = `/t/${session.accessSlug}`;
+  const publicPath = `/t/${session.accessSlug}`;
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const protocol = requestHeaders.get("x-forwarded-proto") ?? "https";
+  const publicUrl = host ? `${protocol}://${host}${publicPath}` : publicPath;
   const hasVideo =
     (session.videoProvider === "youtube" && session.videoYoutubeId) ||
     (session.videoProvider === "blob" && session.videoBlobUrl);
@@ -126,7 +131,9 @@ export default async function SessionDetailPage({
           <CardDescription>Compartilhe com os participantes desta turma.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-2">
-          <code className="rounded-md bg-muted px-2.5 py-1.5 text-xs">{publicUrl}</code>
+          <code className="max-w-full break-all rounded-md bg-muted px-2.5 py-1.5 text-xs">
+            {publicUrl}
+          </code>
           <CopyButton value={publicUrl} label="Copiar link" />
           <Button asChild variant="outline" size="sm">
             <a href={publicUrl} target="_blank" rel="noreferrer">
