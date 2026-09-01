@@ -1,50 +1,21 @@
+import Image from "next/image";
 import Link from "next/link";
 
-/**
- * Símbolo LÍDER — duas cruzes arredondadas entrelaçadas (uma carmim, uma cinza),
- * evocando conexão e cuidado. Reprodução vetorial fiel da marca de
- * lidersaude.com.br; se a LÍDER fornecer o SVG oficial, basta trocar os paths.
- */
 export function LiderMark({
-  className,
+  className = "size-9",
   title = "LÍDER",
 }: {
   className?: string;
   title?: string;
 }) {
   return (
-    <svg
-      viewBox="0 0 48 48"
-      className={className}
-      role="img"
-      aria-label={title}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <mask id="lider-weave" maskUnits="userSpaceOnUse" x="0" y="0" width="48" height="48">
-        <rect width="48" height="48" fill="#fff" />
-        {/* deixa a cruz cinza passar "por cima" da carmim neste ponto */}
-        <rect x="12" y="4" width="13" height="21" rx="6" fill="#000" />
-      </mask>
-
-      {/* cruz cinza (atrás), centro ~ (19, 26) */}
-      <path
-        d="M19 13 V39 M6 26 H32"
-        stroke="var(--color-brand-gray, #8a8c8e)"
-        strokeWidth="9"
-        strokeLinecap="round"
-      />
-
-      {/* cruz carmim (à frente), centro ~ (27, 22), tecida com a cinza */}
-      <g mask="url(#lider-weave)">
-        <path
-          d="M27 9 V35 M14 22 H40"
-          stroke="var(--color-brand, #ba0e31)"
-          strokeWidth="9"
-          strokeLinecap="round"
-        />
-      </g>
-    </svg>
+    <Image
+      src="/lider-mark.png"
+      alt={title}
+      width={512}
+      height={506}
+      className={`shrink-0 object-contain ${className}`}
+    />
   );
 }
 
