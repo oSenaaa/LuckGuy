@@ -11,6 +11,10 @@ import { CertificateError, issueCertificate } from "@/lib/certificate/issue";
 import { VIDEO_MAX_DURATION_SECONDS } from "@/lib/upload-rules";
 import { requireAdmin } from "@/lib/require-admin";
 
+function parseBrasiliaDateTime(value: string) {
+  return value ? new Date(`${value}-03:00`) : null;
+}
+
 export async function createSession(formData: FormData) {
   const userId = await requireAdmin();
   const courseId = String(formData.get("courseId") ?? "");
@@ -32,8 +36,8 @@ export async function createSession(formData: FormData) {
       name,
       workloadHours: workloadHours.toFixed(2),
       accessSlug: generateAccessSlug(),
-      startsAt: startsAtRaw ? new Date(startsAtRaw) : null,
-      endsAt: endsAtRaw ? new Date(endsAtRaw) : null,
+      startsAt: parseBrasiliaDateTime(startsAtRaw),
+      endsAt: parseBrasiliaDateTime(endsAtRaw),
       createdByClerkUserId: userId,
     })
     .returning({ id: courseSessions.id });

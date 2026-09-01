@@ -94,11 +94,11 @@ export default async function NewSessionPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
-                <Label htmlFor="startsAt">Início (opcional)</Label>
+                <Label htmlFor="startsAt">Início (opcional, horário de Brasília)</Label>
                 <Input id="startsAt" name="startsAt" type="datetime-local" />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="endsAt">Fim (opcional)</Label>
+                <Label htmlFor="endsAt">Fim (opcional, horário de Brasília)</Label>
                 <Input id="endsAt" name="endsAt" type="datetime-local" />
               </div>
             </div>

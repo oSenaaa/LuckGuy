@@ -24,6 +24,8 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
       minWatchPercent: courseSessions.minWatchPercent,
       courseName: courses.name,
       status: courseSessions.status,
+      startsAt: courseSessions.startsAt,
+      endsAt: courseSessions.endsAt,
     })
     .from(courseSessions)
     .innerJoin(courses, eq(courses.id, courseSessions.courseId))
@@ -35,6 +37,11 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
       (session.videoProvider === "youtube" && session.videoYoutubeId));
 
   if (!session || session.status !== "published" || !hasVideo) {
+    redirect(`/t/${slug}`);
+  }
+
+  const now = new Date();
+  if ((session.startsAt && session.startsAt > now) || (session.endsAt && session.endsAt < now)) {
     redirect(`/t/${slug}`);
   }
 

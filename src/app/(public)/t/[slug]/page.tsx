@@ -1,15 +1,12 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { CalendarX, GraduationCap } from "lucide-react";
+import { CalendarClock, CalendarX, GraduationCap } from "lucide-react";
 
 import { getDb } from "@/lib/db";
 import { courseSessions, courses } from "@/lib/db/schema";
 import { getParticipantId } from "@/lib/participant-session";
-import { identifyParticipant } from "./actions";
+import { IdentifyForm } from "./identify-form";
 import { StatusCard } from "@/components/status-card";
-import { SubmitButton } from "@/components/ui/submit-button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -32,6 +29,8 @@ export default async function IdentifyPage({
       status: courseSessions.status,
       courseName: courses.name,
       workloadHours: courseSessions.workloadHours,
+      startsAt: courseSessions.startsAt,
+      endsAt: courseSessions.endsAt,
     })
     .from(courseSessions)
     .innerJoin(courses, eq(courses.id, courseSessions.courseId))
@@ -50,14 +49,40 @@ export default async function IdentifyPage({
     );
   }
 
+  const now = new Date();
+  if (session.startsAt && session.startsAt > now) {
+    const availableAt = new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "long",
+      timeStyle: "short",
+      timeZone: "America/Sao_Paulo",
+    }).format(session.startsAt);
+
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center p-6">
+        <StatusCard
+          icon={CalendarClock}
+          title="Treinamento ainda não disponível"
+          description={`O acesso será liberado em ${availableAt}, no horário de Brasília.`}
+        />
+      </div>
+    );
+  }
+
+  if (session.endsAt && session.endsAt < now) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center p-6">
+        <StatusCard
+          icon={CalendarX}
+          title="Prazo encerrado"
+          description="O período para assistir a este treinamento terminou. Fale com a empresa responsável."
+        />
+      </div>
+    );
+  }
+
   const existingParticipantId = await getParticipantId(session.id);
   if (existingParticipantId) {
     redirect(`/t/${slug}/assistir`);
-  }
-
-  async function handleSubmit(formData: FormData) {
-    "use server";
-    await identifyParticipant(slug, formData);
   }
 
   return (
@@ -74,32 +99,7 @@ export default async function IdentifyPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={handleSubmit} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="fullName">Nome completo</Label>
-              <Input
-                id="fullName"
-                name="fullName"
-                required
-                placeholder="Seu nome completo"
-                autoComplete="name"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <Input
-                id="phone"
-                name="phone"
-                required
-                placeholder="(00) 00000-0000"
-                inputMode="tel"
-                autoComplete="tel"
-              />
-            </div>
-            <SubmitButton pendingText="Confirmando…" className="w-full">
-              Confirmar presença e começar
-            </SubmitButton>
-          </form>
+          <IdentifyForm accessSlug={slug} />
         </CardContent>
       </Card>
     </div>

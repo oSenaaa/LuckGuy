@@ -10,43 +10,58 @@ function normalizePhone(phone: string) {
   return phone.replace(/\D/g, "");
 }
 
-export async function identifyParticipant(accessSlug: string, formData: FormData) {
+export type IdentifyParticipantState = {
+  error: string | null;
+};
+
+export async function identifyParticipant(
+  accessSlug: string,
+  _previousState: IdentifyParticipantState,
+  formData: FormData,
+): Promise<IdentifyParticipantState> {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const phone = normalizePhone(String(formData.get("phone") ?? ""));
 
   if (!fullName || phone.length < 10) {
-    throw new Error("Nome e telefone válidos são obrigatórios");
+    return { error: "Informe um nome e um telefone válidos." };
   }
 
-  const db = getDb();
-  const [session] = await db
-    .select()
-    .from(courseSessions)
-    .where(and(eq(courseSessions.accessSlug, accessSlug), eq(courseSessions.status, "published")))
-    .limit(1);
+  try {
+    const db = getDb();
+    const [session] = await db
+      .select()
+      .from(courseSessions)
+      .where(and(eq(courseSessions.accessSlug, accessSlug), eq(courseSessions.status, "published")))
+      .limit(1);
 
-  if (!session) {
-    throw new Error("Turma não encontrada ou indisponível");
+    if (!session) {
+      return { error: "Esta turma não está disponível." };
+    }
+
+    const now = new Date();
+    if (session.startsAt && session.startsAt > now) {
+      return { error: "Este treinamento ainda não está disponível." };
+    }
+    if (session.endsAt && session.endsAt < now) {
+      return { error: "O prazo para assistir a este treinamento encerrou." };
+    }
+
+    const [participant] = await db
+      .insert(participants)
+      .values({ courseSessionId: session.id, fullName, phone })
+      .onConflictDoUpdate({
+        target: [participants.courseSessionId, participants.phone],
+        set: { fullName },
+      })
+      .returning({ id: participants.id });
+
+    await createParticipantSession(session.id, participant.id);
+  } catch (error) {
+    console.error("Falha ao identificar participante", error);
+    return {
+      error: "Não foi possível confirmar sua presença. Tente novamente em instantes.",
+    };
   }
-
-  const now = new Date();
-  if (session.startsAt && session.startsAt > now) {
-    throw new Error("Este treinamento ainda não está disponível");
-  }
-  if (session.endsAt && session.endsAt < now) {
-    throw new Error("O prazo para assistir a este treinamento encerrou");
-  }
-
-  const [participant] = await db
-    .insert(participants)
-    .values({ courseSessionId: session.id, fullName, phone })
-    .onConflictDoUpdate({
-      target: [participants.courseSessionId, participants.phone],
-      set: { fullName },
-    })
-    .returning({ id: participants.id });
-
-  await createParticipantSession(session.id, participant.id);
 
   redirect(`/t/${accessSlug}/assistir`);
 }
