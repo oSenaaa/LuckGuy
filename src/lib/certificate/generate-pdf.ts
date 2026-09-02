@@ -8,22 +8,89 @@ export type CertificateData = {
   verificationCode: string;
 };
 
-export type TextPosition = { x: number; y: number; size?: number; maxWidth?: number };
+export type RGB = [number, number, number];
+
+export type TextPosition = {
+  x: number;
+  y: number;
+  size?: number;
+  maxWidth?: number;
+  color?: RGB;
+  /** Paints over the placeholder sample text baked into the background image before drawing the real value. */
+  cover?: { x: number; y: number; width: number; height: number; color?: RGB };
+};
+
+export type SignaturePosition = { x: number; y: number; width: number; maxHeight: number };
 
 export type TextPositions = {
   participantName: TextPosition;
   courseName: TextPosition;
   workloadHours: TextPosition;
+  workloadHoursInline: TextPosition;
   issuedAt: TextPosition;
   verificationCode: TextPosition;
+  signature: SignaturePosition;
 };
 
+const BRAND_MAROON: RGB = [0.42, 0.1, 0.1];
+const PAGE_BACKGROUND: RGB = [0.954, 0.954, 0.955];
+
+/**
+ * Calibrated against the current default template (2760x1952px, "ModeloCert"),
+ * whose background image has sample placeholder text ("Seu Nome Completo",
+ * "NOME DO CURSO", "XX", "00/00/0000") drawn where each field belongs.
+ * A future template with different dimensions/layout needs its own
+ * `certificateTemplates.textPositions` override.
+ */
 export const DEFAULT_TEXT_POSITIONS: TextPositions = {
-  participantName: { x: 421, y: 380, size: 28, maxWidth: 640 },
-  courseName: { x: 421, y: 330, size: 16, maxWidth: 640 },
-  workloadHours: { x: 421, y: 300, size: 12 },
-  issuedAt: { x: 421, y: 280, size: 12 },
-  verificationCode: { x: 421, y: 40, size: 9 },
+  participantName: {
+    x: 1384,
+    y: 1012,
+    size: 92,
+    maxWidth: 1500,
+    color: BRAND_MAROON,
+    cover: { x: 790, y: 992, width: 1187, height: 177 },
+  },
+  courseName: {
+    x: 1379,
+    y: 787,
+    size: 70,
+    maxWidth: 1900,
+    color: BRAND_MAROON,
+    cover: { x: 992, y: 778, width: 774, height: 99 },
+  },
+  workloadHours: {
+    x: 1424,
+    y: 331,
+    size: 30,
+    maxWidth: 250,
+    color: BRAND_MAROON,
+    cover: { x: 1318, y: 322, width: 213, height: 56 },
+  },
+  workloadHoursInline: {
+    x: 1562,
+    y: 706,
+    size: 40,
+    maxWidth: 110,
+    color: BRAND_MAROON,
+    cover: { x: 1524, y: 700, width: 75, height: 58 },
+  },
+  issuedAt: {
+    x: 830,
+    y: 325,
+    size: 34,
+    maxWidth: 280,
+    color: BRAND_MAROON,
+    cover: { x: 701, y: 316, width: 257, height: 68 },
+  },
+  verificationCode: {
+    x: 2450,
+    y: 72,
+    size: 18,
+    maxWidth: 420,
+    color: [0.45, 0.45, 0.45],
+  },
+  signature: { x: 1380, y: 205, width: 300, maxHeight: 88 },
 };
 
 function drawCentered(
@@ -41,17 +108,39 @@ function drawCentered(
     width = font.widthOfTextAtSize(text, size);
   }
 
+  if (pos.cover) {
+    // Cover at least the baked-in placeholder's footprint, but hug tightly
+    // shrunk to the actual rendered text so short values don't leave a
+    // visibly mismatched patch wider than the text itself.
+    const pad = 14;
+    const coverWidth = Math.max(pos.cover.width, width + pad * 2);
+    const coverX = pos.x - coverWidth / 2;
+    const [cr, cg, cb] = pos.cover.color ?? PAGE_BACKGROUND;
+    page.drawRectangle({
+      x: coverX,
+      y: pos.cover.y,
+      width: coverWidth,
+      height: pos.cover.height,
+      color: rgb(cr, cg, cb),
+    });
+  }
+
+  const [r, g, b] = pos.color ?? [0.1, 0.1, 0.1];
   page.drawText(text, {
     x: pos.x - width / 2,
     y: pos.y,
     size,
     font,
-    color: rgb(0.1, 0.1, 0.1),
+    color: rgb(r, g, b),
   });
 }
 
 function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(date);
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
 }
 
 async function embedImageAnyFormat(pdfDoc: PDFDocument, bytes: Uint8Array) {
@@ -84,19 +173,24 @@ export async function generateCertificatePdf({
   const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
   drawCentered(page, data.participantName, positions.participantName, boldFont);
-  drawCentered(page, data.courseName, positions.courseName, regularFont);
-  drawCentered(page, `Carga horária: ${data.workloadHours}h`, positions.workloadHours, regularFont);
-  drawCentered(page, formatDate(data.issuedAt), positions.issuedAt, regularFont);
+  drawCentered(page, data.courseName, positions.courseName, boldFont);
+  drawCentered(page, `${data.workloadHours} HORAS`, positions.workloadHours, boldFont);
+  drawCentered(page, String(data.workloadHours), positions.workloadHoursInline, regularFont);
+  drawCentered(page, formatDate(data.issuedAt), positions.issuedAt, boldFont);
   drawCentered(page, `Código de validação: ${data.verificationCode}`, positions.verificationCode, regularFont);
 
   if (signatureImageBytes) {
     const sigImage = await embedImageAnyFormat(pdfDoc, signatureImageBytes);
-    const sigDims = sigImage.scale(0.3);
+    const natural = sigImage.scale(1);
+    const sigPos = positions.signature;
+    const scale = Math.min(sigPos.width / natural.width, sigPos.maxHeight / natural.height);
+    const w = natural.width * scale;
+    const h = natural.height * scale;
     page.drawImage(sigImage, {
-      x: width / 2 - sigDims.width / 2,
-      y: 90,
-      width: sigDims.width,
-      height: sigDims.height,
+      x: sigPos.x - w / 2,
+      y: sigPos.y,
+      width: w,
+      height: h,
     });
   }
 
