@@ -8,6 +8,11 @@ export type YoutubePlayer = {
   pauseVideo: () => void;
   seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   setPlaybackRate: (suggestedRate: number) => void;
+  mute: () => void;
+  unMute: () => void;
+  isMuted: () => boolean;
+  setVolume: (volume: number) => void;
+  getVolume: () => number;
   destroy: () => void;
 };
 

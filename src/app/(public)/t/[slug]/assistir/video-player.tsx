@@ -7,8 +7,13 @@ import {
   Download,
   Gauge,
   Loader2,
+  Maximize,
+  Minimize,
   Pause,
   Play,
+  Volume1,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,12 +33,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 
 const BLOB_PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 const MAX_PLAYBACK_RATE = 2;
 const SEEK_EPSILON_SECONDS = 0.05;
 const YOUTUBE_SEEK_TOLERANCE_SECONDS = 1;
 const PROGRESS_RECONCILIATION_TOLERANCE_SECONDS = 2;
+const DEFAULT_VOLUME = 100;
 
 type Props = {
   courseSessionId: string;
@@ -51,11 +59,17 @@ type PlayerControlsProps = {
   availablePlaybackRates: number[];
   currentTime: number;
   duration: number;
+  isFullscreen: boolean;
+  isMuted: boolean;
   isPlaying: boolean;
   playbackRate: number;
   ready: boolean;
+  volume: number;
   onPlaybackRateChange: (rate: number) => void;
+  onToggleFullscreen: () => void;
+  onToggleMute: () => void;
   onTogglePlayback: () => void;
+  onVolumeChange: (volume: number) => void;
 };
 
 type PendingYoutubeSeek = {
@@ -84,15 +98,27 @@ function formatPlaybackRate(rate: number) {
   return `${rate.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}x`;
 }
 
+function VolumeIcon({ muted, volume }: { muted: boolean; volume: number }) {
+  if (muted || volume === 0) return <VolumeX />;
+  if (volume < 50) return <Volume1 />;
+  return <Volume2 />;
+}
+
 function PlayerControls({
   availablePlaybackRates,
   currentTime,
   duration,
+  isFullscreen,
+  isMuted,
   isPlaying,
   playbackRate,
   ready,
+  volume,
   onPlaybackRateChange,
+  onToggleFullscreen,
+  onToggleMute,
   onTogglePlayback,
+  onVolumeChange,
 }: PlayerControlsProps) {
   return (
     <div
@@ -111,6 +137,29 @@ function PlayerControls({
       >
         {isPlaying ? <Pause /> : <Play />}
       </Button>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-lg"
+        disabled={!ready}
+        onClick={onToggleMute}
+        aria-label={isMuted || volume === 0 ? "Ativar som" : "Silenciar"}
+        className="text-white hover:bg-white/15 hover:text-white focus-visible:border-white/50 focus-visible:ring-white/40"
+      >
+        <VolumeIcon muted={isMuted} volume={volume} />
+      </Button>
+
+      <Slider
+        aria-label="Volume"
+        disabled={!ready}
+        min={0}
+        max={100}
+        step={1}
+        value={[isMuted ? 0 : volume]}
+        onValueChange={([nextVolume]) => onVolumeChange(nextVolume)}
+        className="hidden w-20 sm:flex [&_[data-slot=slider-range]]:bg-white [&_[data-slot=slider-thumb]]:border-white [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-track]]:bg-white/25"
+      />
 
       <span className="text-xs tabular-nums text-white/85" aria-hidden="true">
         {formatTime(currentTime)} / {formatTime(duration)}
@@ -144,6 +193,18 @@ function PlayerControls({
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-lg"
+        disabled={!ready}
+        onClick={onToggleFullscreen}
+        aria-label={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
+        className="text-white hover:bg-white/15 hover:text-white focus-visible:border-white/50 focus-visible:ring-white/40"
+      >
+        {isFullscreen ? <Minimize /> : <Maximize />}
+      </Button>
     </div>
   );
 }
@@ -159,6 +220,7 @@ export function VideoPlayer({
   initialCompleted,
   initialCertificateUrl,
 }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const youtubePlayerRef = useRef<YoutubePlayer | null>(null);
   const lastAllowedBlobTimeRef = useRef(Math.max(0, initialCurrentTime));
@@ -185,6 +247,9 @@ export function VideoPlayer({
   );
   const [currentTime, setCurrentTime] = useState(Math.max(0, initialCurrentTime));
   const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(DEFAULT_VOLUME);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const getCurrentTime = useCallback(() => {
     if (provider === "blob") return videoRef.current?.currentTime ?? 0;
@@ -293,6 +358,9 @@ export function VideoPlayer({
               .filter(
                 (rate) => Number.isFinite(rate) && rate > 0 && rate <= MAX_PLAYBACK_RATE,
               );
+
+            event.target.setVolume(DEFAULT_VOLUME);
+            event.target.unMute();
 
             setCurrentTime(resumeAt);
             setDuration(videoDuration);
@@ -453,6 +521,21 @@ export function VideoPlayer({
     return () => clearInterval(interval);
   }, [isPlaying, sendHeartbeat]);
 
+  useEffect(() => {
+    function handleFullscreenChange() {
+      const doc = document as Document & { webkitFullscreenElement?: Element | null };
+      const fullscreenElement = document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
+      setIsFullscreen(fullscreenElement !== null && fullscreenElement === containerRef.current);
+    }
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
   const togglePlayback = useCallback(async () => {
     if (!playerReady) return;
 
@@ -508,6 +591,70 @@ export function VideoPlayer({
     youtubePlayerRef.current?.setPlaybackRate(rate);
   }
 
+  function changeVolume(nextVolume: number) {
+    const clamped = Math.round(Math.min(100, Math.max(0, nextVolume)));
+    setVolume(clamped);
+    setIsMuted(clamped === 0);
+
+    if (provider === "blob") {
+      const video = videoRef.current;
+      if (!video) return;
+      video.volume = clamped / 100;
+      video.muted = clamped === 0;
+      return;
+    }
+
+    const player = youtubePlayerRef.current;
+    if (!player) return;
+    player.setVolume(clamped);
+    if (clamped === 0) player.mute();
+    else player.unMute();
+  }
+
+  function toggleMute() {
+    if (provider === "blob") {
+      const video = videoRef.current;
+      if (!video) return;
+      const nextMuted = !video.muted;
+      video.muted = nextMuted;
+      setIsMuted(nextMuted);
+      return;
+    }
+
+    const player = youtubePlayerRef.current;
+    if (!player) return;
+    const nextMuted = !player.isMuted();
+    if (nextMuted) player.mute();
+    else player.unMute();
+    setIsMuted(nextMuted);
+  }
+
+  async function toggleFullscreen() {
+    const container = containerRef.current as
+      | (HTMLDivElement & { webkitRequestFullscreen?: () => void })
+      | null;
+    if (!container) return;
+
+    const doc = document as Document & {
+      webkitExitFullscreen?: () => void;
+      webkitFullscreenElement?: Element | null;
+    };
+    const fullscreenElement = document.fullscreenElement ?? doc.webkitFullscreenElement;
+
+    try {
+      if (fullscreenElement) {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else doc.webkitExitFullscreen?.();
+      } else if (container.requestFullscreen) {
+        await container.requestFullscreen();
+      } else {
+        container.webkitRequestFullscreen?.();
+      }
+    } catch {
+      toast.error("Não foi possível alternar a tela cheia");
+    }
+  }
+
   function syncBlobTime(video: HTMLVideoElement) {
     setCurrentTime(video.currentTime);
     if (Number.isFinite(video.duration)) setDuration(video.duration);
@@ -516,6 +663,8 @@ export function VideoPlayer({
   function handleBlobLoadedMetadata(video: HTMLVideoElement) {
     const resumeAt = Math.min(Math.max(0, initialCurrentTime), video.duration);
     lastAllowedBlobTimeRef.current = resumeAt;
+    video.volume = volume / 100;
+    video.muted = isMuted;
     syncBlobTime(video);
 
     if (resumeAt > 0) {
@@ -613,7 +762,11 @@ export function VideoPlayer({
   return (
     <div className="flex flex-col gap-4">
       <div
-        className="relative aspect-video w-full overflow-hidden rounded-lg bg-black"
+        ref={containerRef}
+        className={cn(
+          "relative w-full overflow-hidden bg-black",
+          isFullscreen ? "h-full" : "aspect-video rounded-lg",
+        )}
         onContextMenu={(event) => event.preventDefault()}
       >
         {provider === "blob" ? (
@@ -658,11 +811,17 @@ export function VideoPlayer({
           availablePlaybackRates={availablePlaybackRates}
           currentTime={currentTime}
           duration={duration}
+          isFullscreen={isFullscreen}
+          isMuted={isMuted}
           isPlaying={isPlayingState}
           playbackRate={playbackRate}
           ready={playerReady}
+          volume={volume}
           onPlaybackRateChange={changePlaybackRate}
+          onToggleFullscreen={() => void toggleFullscreen()}
+          onToggleMute={toggleMute}
           onTogglePlayback={() => void togglePlayback()}
+          onVolumeChange={changeVolume}
         />
       </div>
 
