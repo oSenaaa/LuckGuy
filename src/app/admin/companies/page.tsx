@@ -1,5 +1,6 @@
 import { desc } from "drizzle-orm";
-import { Building2 } from "lucide-react";
+import { ArrowUpRight, Building2 } from "lucide-react";
+import Link from "next/link";
 
 import { getDb } from "@/lib/db";
 import { companies } from "@/lib/db/schema";
@@ -74,16 +75,21 @@ export default async function CompaniesPage() {
           ) : (
             <ul className="divide-y divide-border">
               {list.map((company) => (
-                <li
-                  key={company.id}
-                  className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3"
-                >
-                  <span className="font-medium">{company.name}</span>
-                  {company.cnpj && (
-                    <span className="text-xs text-muted-foreground">
-                      {company.cnpj}
-                    </span>
-                  )}
+                <li key={company.id}>
+                  <Link
+                    href={`/admin/companies/${company.id}`}
+                    className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 transition-colors hover:bg-muted/50"
+                  >
+                    <span className="font-medium">{company.name}</span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {company.cnpj && (
+                        <span className="text-xs text-muted-foreground">
+                          {company.cnpj}
+                        </span>
+                      )}
+                      <ArrowUpRight className="size-4 text-muted-foreground" />
+                    </div>
+                  </Link>
                 </li>
               ))}
             </ul>

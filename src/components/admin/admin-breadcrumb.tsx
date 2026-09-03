@@ -27,11 +27,16 @@ export function AdminBreadcrumb() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean); // e.g. ["admin", "sessions", "abc"]
 
+  const DYNAMIC_ID_LABELS: Record<string, string> = {
+    sessions: "Detalhe da turma",
+    companies: "Detalhe da empresa",
+  };
+
   const crumbs = segments.map((segment, index) => {
     const href = "/" + segments.slice(0, index + 1).join("/");
-    const isDynamicId =
-      index > 0 && !LABELS[segment] && segments[index - 1] === "sessions";
-    const label = isDynamicId ? "Detalhe da turma" : LABELS[segment] ?? segment;
+    const parent = segments[index - 1];
+    const isDynamicId = index > 0 && !LABELS[segment] && parent in DYNAMIC_ID_LABELS;
+    const label = isDynamicId ? DYNAMIC_ID_LABELS[parent] : LABELS[segment] ?? segment;
     return { href, label, isLast: index === segments.length - 1 };
   });
 
