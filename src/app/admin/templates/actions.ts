@@ -74,14 +74,60 @@ export async function createTemplate(formData: FormData) {
   return { ok: true as const };
 }
 
-export async function setDefaultTemplate(formData: FormData) {
+export async function setDefaultTemplate(id: string) {
   await requireAdmin();
-  const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  if (!id) return { ok: false as const, error: "Modelo inválido." };
   const db = getDb();
+
+  const [target] = await db
+    .select()
+    .from(certificateTemplates)
+    .where(eq(certificateTemplates.id, id))
+    .limit(1);
+  if (!target) return { ok: false as const, error: "Modelo não encontrado." };
+  if (target.archivedAt) {
+    return { ok: false as const, error: "Desarquive o modelo antes de torná-lo padrão." };
+  }
+
   await db.batch([
     db.update(certificateTemplates).set({ isDefault: false }).where(eq(certificateTemplates.isDefault, true)),
     db.update(certificateTemplates).set({ isDefault: true }).where(eq(certificateTemplates.id, id)),
   ]);
   revalidatePath("/admin/templates");
+  return { ok: true as const };
+}
+
+export async function archiveTemplate(id: string) {
+  await requireAdmin();
+  if (!id) return { ok: false as const, error: "Modelo inválido." };
+  const db = getDb();
+
+  const [target] = await db
+    .select()
+    .from(certificateTemplates)
+    .where(eq(certificateTemplates.id, id))
+    .limit(1);
+  if (!target) return { ok: false as const, error: "Modelo não encontrado." };
+  if (target.isDefault) {
+    return { ok: false as const, error: "Torne outro modelo padrão antes de arquivar este." };
+  }
+
+  await db
+    .update(certificateTemplates)
+    .set({ archivedAt: new Date(), updatedAt: new Date() })
+    .where(eq(certificateTemplates.id, id));
+  revalidatePath("/admin/templates");
+  return { ok: true as const };
+}
+
+export async function unarchiveTemplate(id: string) {
+  await requireAdmin();
+  if (!id) return { ok: false as const, error: "Modelo inválido." };
+  const db = getDb();
+  await db
+    .update(certificateTemplates)
+    .set({ archivedAt: null, updatedAt: new Date() })
+    .where(eq(certificateTemplates.id, id));
+  revalidatePath("/admin/templates");
+  return { ok: true as const };
 }

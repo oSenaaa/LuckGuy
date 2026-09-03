@@ -52,6 +52,7 @@ export const certificateTemplates = pgTable("certificate_templates", {
   backgroundImageBlobUrl: text("background_image_blob_url").notNull(),
   textPositions: jsonb("text_positions"),
   isDefault: boolean("is_default").notNull().default(false),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
