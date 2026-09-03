@@ -26,71 +26,35 @@ export type TextPositions = {
   participantName: TextPosition;
   courseName: TextPosition;
   workloadHours: TextPosition;
-  workloadHoursInline: TextPosition;
   issuedAt: TextPosition;
   verificationCode: TextPosition;
   signature: SignaturePosition;
 };
 
 const BRAND_MAROON: RGB = [0.42, 0.1, 0.1];
+const META_GRAY: RGB = [0.45, 0.45, 0.45];
 const PAGE_BACKGROUND: RGB = [0.954, 0.954, 0.955];
 
 /**
- * Calibrated against the current default template (2760x1952px, "ModeloCert"),
- * whose background image has sample placeholder text ("Seu Nome Completo",
- * "NOME DO CURSO", "XX", "00/00/0000") drawn where each field belongs.
- * A future template with different dimensions/layout needs its own
- * `certificateTemplates.textPositions` override.
+ * Calibrated against the current default template ("2026_2Semestre_V3",
+ * 1492x1054px), which has blank underlines (no baked-in sample text) for
+ * participant name, course name and workload hours, plus a signature line
+ * above "LÍDER SAÚDE OCUPACIONAL / Instrutor Responsável".
+ *
+ * IMPORTANT: these are absolute pixel coordinates tied to THIS specific
+ * background image's layout and dimensions. Uploading a differently sized
+ * or laid-out template as the new default (as already happened once) will
+ * misalign every field again — there's no admin UI yet to calibrate
+ * `certificateTemplates.textPositions` per template, so this fallback is
+ * all that's used in practice (see issue.ts).
  */
 export const DEFAULT_TEXT_POSITIONS: TextPositions = {
-  participantName: {
-    x: 1384,
-    y: 1012,
-    size: 92,
-    maxWidth: 1500,
-    color: BRAND_MAROON,
-    cover: { x: 790, y: 992, width: 1187, height: 177 },
-  },
-  courseName: {
-    x: 1379,
-    y: 787,
-    size: 70,
-    maxWidth: 1900,
-    color: BRAND_MAROON,
-    cover: { x: 992, y: 778, width: 774, height: 99 },
-  },
-  workloadHours: {
-    x: 1424,
-    y: 331,
-    size: 30,
-    maxWidth: 250,
-    color: BRAND_MAROON,
-    cover: { x: 1318, y: 322, width: 213, height: 56 },
-  },
-  workloadHoursInline: {
-    x: 1562,
-    y: 706,
-    size: 40,
-    maxWidth: 110,
-    color: BRAND_MAROON,
-    cover: { x: 1524, y: 700, width: 75, height: 58 },
-  },
-  issuedAt: {
-    x: 830,
-    y: 325,
-    size: 34,
-    maxWidth: 280,
-    color: BRAND_MAROON,
-    cover: { x: 701, y: 316, width: 257, height: 68 },
-  },
-  verificationCode: {
-    x: 2450,
-    y: 72,
-    size: 18,
-    maxWidth: 420,
-    color: [0.45, 0.45, 0.45],
-  },
-  signature: { x: 1380, y: 205, width: 300, maxHeight: 88 },
+  participantName: { x: 746, y: 534, size: 44, maxWidth: 850, color: BRAND_MAROON },
+  courseName: { x: 741, y: 421, size: 34, maxWidth: 620, color: BRAND_MAROON },
+  workloadHours: { x: 847, y: 367, size: 26, maxWidth: 200, color: BRAND_MAROON },
+  issuedAt: { x: 1220, y: 79, size: 15, maxWidth: 420, color: META_GRAY },
+  verificationCode: { x: 1220, y: 54, size: 13, maxWidth: 420, color: META_GRAY },
+  signature: { x: 749, y: 134, width: 200, maxHeight: 90 },
 };
 
 function drawCentered(
@@ -174,9 +138,8 @@ export async function generateCertificatePdf({
 
   drawCentered(page, data.participantName, positions.participantName, boldFont);
   drawCentered(page, data.courseName, positions.courseName, boldFont);
-  drawCentered(page, `${data.workloadHours} HORAS`, positions.workloadHours, boldFont);
-  drawCentered(page, String(data.workloadHours), positions.workloadHoursInline, regularFont);
-  drawCentered(page, formatDate(data.issuedAt), positions.issuedAt, boldFont);
+  drawCentered(page, String(data.workloadHours), positions.workloadHours, regularFont);
+  drawCentered(page, `Emitido em ${formatDate(data.issuedAt)}`, positions.issuedAt, regularFont);
   drawCentered(page, `Código de validação: ${data.verificationCode}`, positions.verificationCode, regularFont);
 
   if (signatureImageBytes) {
