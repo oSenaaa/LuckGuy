@@ -36,7 +36,8 @@ export default async function NewSessionPage() {
         <CardHeader className="border-b">
           <CardTitle>Dados da turma</CardTitle>
           <CardDescription>
-            Após criar, você poderá enviar o vídeo e publicar a turma.
+            O vídeo do treinamento selecionado é usado automaticamente. Após criar,
+            você poderá publicar a turma.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -47,11 +48,17 @@ export default async function NewSessionPage() {
                 <option value="" disabled>
                   Selecione um treinamento
                 </option>
-                {courseList.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.name}
-                  </option>
-                ))}
+                {courseList.map((course) => {
+                  const hasVideo =
+                    (course.videoProvider === "blob" && course.videoBlobUrl) ||
+                    (course.videoProvider === "youtube" && course.videoYoutubeId);
+                  return (
+                    <option key={course.id} value={course.id}>
+                      {course.name}
+                      {!hasVideo ? " (sem vídeo)" : ""}
+                    </option>
+                  );
+                })}
               </NativeSelect>
             </div>
 

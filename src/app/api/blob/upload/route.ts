@@ -3,14 +3,14 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { courseSessions } from "@/lib/db/schema";
+import { courses } from "@/lib/db/schema";
 import {
   ADMIN_IMAGE_CONTENT_TYPES,
   SIGNATURE_IMAGE_MAX_SIZE_BYTES,
   TEMPLATE_IMAGE_MAX_SIZE_BYTES,
   VIDEO_CONTENT_TYPES,
   VIDEO_MAX_SIZE_BYTES,
-  getVideoSessionIdFromUploadPath,
+  getVideoCourseIdFromUploadPath,
   isSignatureUploadPath,
   isTemplateUploadPath,
 } from "@/lib/upload-rules";
@@ -48,14 +48,14 @@ export async function POST(request: Request): Promise<NextResponse> {
           };
         }
 
-        const sessionId = getVideoSessionIdFromUploadPath(pathname);
-        if (sessionId) {
-          const [session] = await getDb()
-            .select({ id: courseSessions.id })
-            .from(courseSessions)
-            .where(eq(courseSessions.id, sessionId))
+        const courseId = getVideoCourseIdFromUploadPath(pathname);
+        if (courseId) {
+          const [course] = await getDb()
+            .select({ id: courses.id })
+            .from(courses)
+            .where(eq(courses.id, courseId))
             .limit(1);
-          if (!session) throw new Error("Turma não encontrada.");
+          if (!course) throw new Error("Treinamento não encontrado.");
 
           return {
             allowedContentTypes: [...VIDEO_CONTENT_TYPES],

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { courseSessions, viewingProgress } from "@/lib/db/schema";
+import { courses, courseSessions, viewingProgress } from "@/lib/db/schema";
 import { getParticipantId } from "@/lib/participant-session";
 
 const HEARTBEAT_INTERVAL_SECONDS = 10;
@@ -48,8 +48,12 @@ export async function POST(request: NextRequest) {
 
   const db = getDb();
   const [session] = await db
-    .select()
+    .select({
+      minWatchPercent: courseSessions.minWatchPercent,
+      videoDurationSeconds: courses.videoDurationSeconds,
+    })
     .from(courseSessions)
+    .innerJoin(courses, eq(courses.id, courseSessions.courseId))
     .where(eq(courseSessions.id, courseSessionId))
     .limit(1);
 

@@ -4,11 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { courseSessions } from "@/lib/db/schema";
+import { courses, courseSessions } from "@/lib/db/schema";
 import { generateAccessSlug } from "@/lib/access-slug";
-import { UploadedVideoError, verifyUploadedVideo } from "@/lib/blob";
 import { CertificateError, issueCertificate } from "@/lib/certificate/issue";
-import { VIDEO_MAX_DURATION_SECONDS } from "@/lib/upload-rules";
 import { requireAdmin } from "@/lib/require-admin";
 
 function parseBrasiliaDateTime(value: string) {
@@ -46,75 +44,22 @@ export async function createSession(formData: FormData) {
   redirect(`/admin/sessions/${session.id}`);
 }
 
-export async function setSessionVideo(sessionId: string, videoBlobUrl: string, videoDurationSeconds: number) {
-  await requireAdmin();
-  if (
-    !Number.isInteger(videoDurationSeconds) ||
-    videoDurationSeconds <= 0 ||
-    videoDurationSeconds > VIDEO_MAX_DURATION_SECONDS
-  ) {
-    return { ok: false as const, error: "A duração do vídeo é inválida." };
-  }
-
-  let verifiedVideoUrl: string;
-  try {
-    const video = await verifyUploadedVideo(videoBlobUrl, sessionId);
-    verifiedVideoUrl = video.url;
-  } catch (error) {
-    console.error("Falha ao validar o vídeo da turma", error);
-    return {
-      ok: false as const,
-      error:
-        error instanceof UploadedVideoError
-          ? error.message
-          : "Não foi possível confirmar o vídeo enviado.",
-    };
-  }
-
-  const updatedSessions = await getDb()
-    .update(courseSessions)
-    .set({
-      videoProvider: "blob",
-      videoBlobUrl: verifiedVideoUrl,
-      videoYoutubeId: null,
-      videoDurationSeconds,
-      updatedAt: new Date(),
-    })
-    .where(eq(courseSessions.id, sessionId))
-    .returning({ id: courseSessions.id });
-  if (updatedSessions.length === 0) {
-    return { ok: false as const, error: "Turma não encontrada." };
-  }
-
-  revalidatePath(`/admin/sessions/${sessionId}`);
-  return { ok: true as const };
-}
-
-export async function setSessionVideoYoutube(sessionId: string, videoYoutubeId: string, videoDurationSeconds: number) {
-  await requireAdmin();
-  await getDb()
-    .update(courseSessions)
-    .set({
-      videoProvider: "youtube",
-      videoYoutubeId,
-      videoBlobUrl: null,
-      videoDurationSeconds,
-      updatedAt: new Date(),
-    })
-    .where(eq(courseSessions.id, sessionId));
-  revalidatePath(`/admin/sessions/${sessionId}`);
-}
-
 export async function publishSession(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const db = getDb();
-  const [session] = await db.select().from(courseSessions).where(eq(courseSessions.id, id)).limit(1);
+  const [session] = await db
+    .select({ course: courses })
+    .from(courseSessions)
+    .innerJoin(courses, eq(courses.id, courseSessions.courseId))
+    .where(eq(courseSessions.id, id))
+    .limit(1);
+  const course = session?.course;
   const hasVideo =
-    (session?.videoProvider === "blob" && session.videoBlobUrl) ||
-    (session?.videoProvider === "youtube" && session.videoYoutubeId);
-  if (!hasVideo || !session?.videoDurationSeconds) {
-    throw new Error("Envie o vídeo antes de publicar a turma");
+    (course?.videoProvider === "blob" && course.videoBlobUrl) ||
+    (course?.videoProvider === "youtube" && course.videoYoutubeId);
+  if (!hasVideo || !course?.videoDurationSeconds) {
+    throw new Error("Envie o vídeo do treinamento antes de publicar a turma");
   }
 
   await db.update(courseSessions).set({ status: "published" }).where(eq(courseSessions.id, id));

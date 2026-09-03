@@ -1,5 +1,6 @@
 import { desc } from "drizzle-orm";
-import { GraduationCap } from "lucide-react";
+import { ArrowUpRight, GraduationCap, Video, VideoOff } from "lucide-react";
+import Link from "next/link";
 
 import { getDb } from "@/lib/db";
 import { courses } from "@/lib/db/schema";
@@ -36,7 +37,8 @@ export default async function CoursesPage() {
         <CardHeader className="border-b">
           <CardTitle>Novo treinamento</CardTitle>
           <CardDescription>
-            A duração padrão é sugerida ao criar uma turma.
+            Após criar, você poderá enviar o vídeo (arquivo ou link do YouTube) que será
+            usado automaticamente em todas as turmas deste treinamento.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -92,17 +94,35 @@ export default async function CoursesPage() {
             </p>
           ) : (
             <ul className="divide-y divide-border">
-              {list.map((course) => (
-                <li
-                  key={course.id}
-                  className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3"
-                >
-                  <span className="font-medium">{course.name}</span>
-                  {course.nrCode && (
-                    <Badge variant="outline">{course.nrCode}</Badge>
-                  )}
-                </li>
-              ))}
+              {list.map((course) => {
+                const hasVideo =
+                  (course.videoProvider === "blob" && course.videoBlobUrl) ||
+                  (course.videoProvider === "youtube" && course.videoYoutubeId);
+                return (
+                  <li key={course.id}>
+                    <Link
+                      href={`/admin/courses/${course.id}`}
+                      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 transition-colors hover:bg-muted/50"
+                    >
+                      <span className="font-medium">{course.name}</span>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {course.nrCode && (
+                          <Badge variant="outline">{course.nrCode}</Badge>
+                        )}
+                        {!course.isActive && (
+                          <Badge variant="outline">Inativo</Badge>
+                        )}
+                        {hasVideo ? (
+                          <Video className="size-4 text-muted-foreground" />
+                        ) : (
+                          <VideoOff className="size-4 text-muted-foreground" />
+                        )}
+                        <ArrowUpRight className="size-4 text-muted-foreground" />
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </CardContent>

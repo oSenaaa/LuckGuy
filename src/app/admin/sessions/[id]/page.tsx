@@ -23,8 +23,6 @@ import {
   viewingProgress,
 } from "@/lib/db/schema";
 import { archiveSession, publishSession, reissueCertificate } from "../actions";
-import { VideoUpload } from "./video-upload";
-import { YoutubeVideoForm } from "./youtube-video-form";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
 import { CopyButton } from "@/components/copy-button";
@@ -61,12 +59,13 @@ export default async function SessionDetailPage({
       status: courseSessions.status,
       accessSlug: courseSessions.accessSlug,
       workloadHours: courseSessions.workloadHours,
-      videoProvider: courseSessions.videoProvider,
-      videoBlobUrl: courseSessions.videoBlobUrl,
-      videoYoutubeId: courseSessions.videoYoutubeId,
-      videoDurationSeconds: courseSessions.videoDurationSeconds,
       minWatchPercent: courseSessions.minWatchPercent,
+      courseId: courses.id,
       courseName: courses.name,
+      videoProvider: courses.videoProvider,
+      videoBlobUrl: courses.videoBlobUrl,
+      videoYoutubeId: courses.videoYoutubeId,
+      videoDurationSeconds: courses.videoDurationSeconds,
       companyName: companies.name,
     })
     .from(courseSessions)
@@ -162,10 +161,12 @@ export default async function SessionDetailPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <VideoUpload sessionId={session.id} />
-            <YoutubeVideoForm sessionId={session.id} />
-          </div>
+          <p className="text-sm text-muted-foreground">
+            O vídeo é definido no treinamento e usado por todas as turmas dele.{" "}
+            <Link href={`/admin/courses/${session.courseId}`} className="font-medium text-primary underline-offset-4 hover:underline">
+              Gerenciar vídeo em {session.courseName}
+            </Link>
+          </p>
           <div className="flex flex-wrap gap-2">
             {session.status !== "published" && (
               <form action={publishSession}>

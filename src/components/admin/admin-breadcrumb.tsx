@@ -30,6 +30,7 @@ export function AdminBreadcrumb() {
   const DYNAMIC_ID_LABELS: Record<string, string> = {
     sessions: "Detalhe da turma",
     companies: "Detalhe da empresa",
+    courses: "Detalhe do treinamento",
   };
 
   const crumbs = segments.map((segment, index) => {

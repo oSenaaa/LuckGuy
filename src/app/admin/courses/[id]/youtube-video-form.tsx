@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import { extractYoutubeVideoId } from "@/lib/youtube";
 import { createYoutubePlayer, loadYoutubeIframeApi } from "@/lib/youtube-iframe-api";
-import { setSessionVideoYoutube } from "../actions";
+import { setCourseVideoYoutube } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,7 @@ function readDuration(videoId: string, containerId: string): Promise<number> {
   });
 }
 
-export function YoutubeVideoForm({ sessionId }: { sessionId: string }) {
+export function YoutubeVideoForm({ courseId }: { courseId: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -44,8 +44,8 @@ export function YoutubeVideoForm({ sessionId }: { sessionId: string }) {
     setLoading(true);
     try {
       await loadYoutubeIframeApi();
-      const duration = await readDuration(videoId, `yt-probe-${sessionId}`);
-      await setSessionVideoYoutube(sessionId, videoId, duration);
+      const duration = await readDuration(videoId, `yt-probe-${courseId}`);
+      await setCourseVideoYoutube(courseId, videoId, duration);
       toast.success("Vídeo do YouTube configurado");
       router.refresh();
     } catch (err) {
@@ -74,7 +74,7 @@ export function YoutubeVideoForm({ sessionId }: { sessionId: string }) {
           {loading ? "Verificando…" : "Usar vídeo"}
         </Button>
       </form>
-      <div id={`yt-probe-${sessionId}`} className="hidden" />
+      <div id={`yt-probe-${courseId}`} className="hidden" />
     </div>
   );
 }

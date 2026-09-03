@@ -103,7 +103,7 @@ export class UploadedVideoError extends Error {
   }
 }
 
-export async function verifyUploadedVideo(url: string, sessionId: string) {
+export async function verifyUploadedVideo(url: string, courseId: string) {
   let parsedUrl: URL;
   try {
     parsedUrl = new URL(url);
@@ -124,8 +124,8 @@ export async function verifyUploadedVideo(url: string, sessionId: string) {
     throw new UploadedVideoError("Não foi possível confirmar o vídeo enviado.");
   }
 
-  if (!blob.pathname.startsWith(`videos/${sessionId}/`)) {
-    throw new UploadedVideoError("O vídeo foi enviado para uma turma diferente.");
+  if (!blob.pathname.startsWith(`videos/${courseId}/`)) {
+    throw new UploadedVideoError("O vídeo foi enviado para um treinamento diferente.");
   }
   if (blob.size <= 0 || blob.size > VIDEO_MAX_SIZE_BYTES) {
     throw new UploadedVideoError("O tamanho do vídeo enviado é inválido.");

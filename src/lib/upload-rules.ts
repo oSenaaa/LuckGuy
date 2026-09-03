@@ -43,7 +43,7 @@ export function isSignatureUploadPath(pathname: string) {
   return SIGNATURE_UPLOAD_PATH_PATTERN.test(pathname);
 }
 
-export function getVideoSessionIdFromUploadPath(pathname: string) {
+export function getVideoCourseIdFromUploadPath(pathname: string) {
   return VIDEO_UPLOAD_PATH_PATTERN.exec(pathname)?.[1] ?? null;
 }
 

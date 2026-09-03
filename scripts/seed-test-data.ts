@@ -30,6 +30,9 @@ async function main() {
         nrCode: "NR-15",
         description: "Turma de teste para validação da plataforma.",
         defaultDurationMinutes: Math.round(YOUTUBE_DURATION_SECONDS / 60),
+        videoProvider: "youtube",
+        videoYoutubeId: YOUTUBE_VIDEO_ID,
+        videoDurationSeconds: YOUTUBE_DURATION_SECONDS,
       })
       .returning();
     console.log("Treinamento criado:", course.id);
@@ -44,9 +47,6 @@ async function main() {
       courseId: course.id,
       companyId: company.id,
       name: "NR-15 - Turma de Teste",
-      videoProvider: "youtube",
-      videoYoutubeId: YOUTUBE_VIDEO_ID,
-      videoDurationSeconds: YOUTUBE_DURATION_SECONDS,
       workloadHours: (YOUTUBE_DURATION_SECONDS / 3600).toFixed(2),
       accessSlug,
       status: "published",

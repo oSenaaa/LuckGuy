@@ -11,7 +11,7 @@ import {
   isVideoContentType,
   sanitizeUploadFilename,
 } from "@/lib/upload-rules";
-import { setSessionVideo } from "../actions";
+import { setCourseVideo } from "../actions";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
@@ -30,7 +30,7 @@ function readVideoDuration(file: File): Promise<number> {
   });
 }
 
-export function VideoUpload({ sessionId }: { sessionId: string }) {
+export function VideoUpload({ courseId }: { courseId: string }) {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
 
@@ -49,7 +49,7 @@ export function VideoUpload({ sessionId }: { sessionId: string }) {
 
       const durationSeconds = await readVideoDuration(file);
       const blob = await upload(
-        `${VIDEO_UPLOAD_PREFIX}${sessionId}/${Date.now()}-${sanitizeUploadFilename(file.name)}`,
+        `${VIDEO_UPLOAD_PREFIX}${courseId}/${Date.now()}-${sanitizeUploadFilename(file.name)}`,
         file,
         {
           access: "public",
@@ -58,7 +58,7 @@ export function VideoUpload({ sessionId }: { sessionId: string }) {
           multipart: file.size > MULTIPART_UPLOAD_THRESHOLD_BYTES,
         },
       );
-      const result = await setSessionVideo(sessionId, blob.url, durationSeconds);
+      const result = await setCourseVideo(courseId, blob.url, durationSeconds);
       if (!result.ok) throw new Error(result.error);
       toast.success("Vídeo enviado com sucesso");
       router.refresh();

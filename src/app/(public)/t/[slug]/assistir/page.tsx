@@ -18,9 +18,9 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
   const [session] = await db
     .select({
       id: courseSessions.id,
-      videoProvider: courseSessions.videoProvider,
-      videoBlobUrl: courseSessions.videoBlobUrl,
-      videoYoutubeId: courseSessions.videoYoutubeId,
+      videoProvider: courses.videoProvider,
+      videoBlobUrl: courses.videoBlobUrl,
+      videoYoutubeId: courses.videoYoutubeId,
       minWatchPercent: courseSessions.minWatchPercent,
       courseName: courses.name,
       status: courseSessions.status,
