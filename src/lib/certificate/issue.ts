@@ -17,7 +17,7 @@ export class CertificateError extends Error {}
 
 async function fetchImageBytes(url: string) {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch image at ${url}`);
+  if (!res.ok) throw new CertificateError(`Não foi possível carregar a imagem do certificado (${url})`);
   return new Uint8Array(await res.arrayBuffer());
 }
 
@@ -99,6 +99,10 @@ export async function issueCertificate(participantId: string, { reissue = false 
   const blob = await put(`certificates/${verificationCode}.pdf`, new Blob([new Uint8Array(pdfBytes)]), {
     access: "public",
     addRandomSuffix: !existingCert,
+    // Reissuing reuses the same deterministic pathname (no random suffix) so the
+    // certificate's public URL stays stable across reissues; that requires an
+    // explicit opt-in to overwrite, otherwise @vercel/blob rejects the second+ reissue.
+    allowOverwrite: Boolean(existingCert),
   });
 
   const snapshotFields = {
