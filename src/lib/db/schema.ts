@@ -41,6 +41,7 @@ export const courses = pgTable("courses", {
   videoBlobUrl: text("video_blob_url"),
   videoYoutubeId: text("video_youtube_id"),
   videoDurationSeconds: integer("video_duration_seconds"),
+  coordinatorSignatureId: uuid("coordinator_signature_id").references(() => certificateSignatures.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -76,7 +77,6 @@ export const courseSessions = pgTable("course_sessions", {
   endsAt: timestamp("ends_at", { withTimezone: true }),
   minWatchPercent: integer("min_watch_percent").notNull().default(90),
   certificateTemplateId: uuid("certificate_template_id").references(() => certificateTemplates.id),
-  coordinatorSignatureId: uuid("coordinator_signature_id").references(() => certificateSignatures.id),
   status: sessionStatusEnum("status").notNull().default("draft"),
   createdByClerkUserId: text("created_by_clerk_user_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

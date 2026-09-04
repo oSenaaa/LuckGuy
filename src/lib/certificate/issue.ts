@@ -65,11 +65,11 @@ export async function issueCertificate(participantId: string, { reissue = false 
     : await db.select().from(certificateTemplates).where(eq(certificateTemplates.isDefault, true)).limit(1);
   if (!template) throw new CertificateError("Nenhum modelo de certificado configurado");
 
-  const [signature] = session.coordinatorSignatureId
+  const [signature] = course.coordinatorSignatureId
     ? await db
         .select()
         .from(certificateSignatures)
-        .where(eq(certificateSignatures.id, session.coordinatorSignatureId))
+        .where(eq(certificateSignatures.id, course.coordinatorSignatureId))
         .limit(1)
     : await db.select().from(certificateSignatures).where(eq(certificateSignatures.isDefault, true)).limit(1);
 

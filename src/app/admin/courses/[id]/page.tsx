@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { GraduationCap, Trash2, Video } from "lucide-react";
+import { GraduationCap, PenLine, Trash2, Video } from "lucide-react";
 
 import { getDb } from "@/lib/db";
-import { companies, courses, courseSessions } from "@/lib/db/schema";
-import { deleteCourse, updateCourse } from "../actions";
+import { certificateSignatures, companies, courses, courseSessions } from "@/lib/db/schema";
+import { deleteCourse, setCourseSignature, updateCourse } from "../actions";
 import { VideoUpload } from "./video-upload";
 import { YoutubeVideoForm } from "./youtube-video-form";
 import { PageHeader } from "@/components/admin/page-header";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
@@ -36,17 +37,32 @@ export default async function CourseDetailPage({
   const [course] = await db.select().from(courses).where(eq(courses.id, id)).limit(1);
   if (!course) notFound();
 
-  const sessions = await db
-    .select({
-      id: courseSessions.id,
-      name: courseSessions.name,
-      status: courseSessions.status,
-      companyName: companies.name,
-    })
-    .from(courseSessions)
-    .innerJoin(companies, eq(companies.id, courseSessions.companyId))
-    .where(eq(courseSessions.courseId, id))
-    .orderBy(desc(courseSessions.createdAt));
+  const [sessions, signatureList] = await Promise.all([
+    db
+      .select({
+        id: courseSessions.id,
+        name: courseSessions.name,
+        status: courseSessions.status,
+        companyName: companies.name,
+      })
+      .from(courseSessions)
+      .innerJoin(companies, eq(companies.id, courseSessions.companyId))
+      .where(eq(courseSessions.courseId, id))
+      .orderBy(desc(courseSessions.createdAt)),
+    db.select().from(certificateSignatures).orderBy(desc(certificateSignatures.isDefault)),
+  ]);
+
+  const defaultSignature = signatureList.find((signature) => signature.isDefault);
+  const resolvedSignature = course.coordinatorSignatureId
+    ? signatureList.find((signature) => signature.id === course.coordinatorSignatureId)
+    : defaultSignature;
+  const signatureLabel = course.coordinatorSignatureId
+    ? resolvedSignature
+      ? `${resolvedSignature.coordinatorName}${resolvedSignature.coordinatorRole ? ` — ${resolvedSignature.coordinatorRole}` : ""}`
+      : "Assinatura não encontrada"
+    : defaultSignature
+      ? `Assinatura padrão: ${defaultSignature.coordinatorName}`
+      : "Nenhuma assinatura cadastrada ainda";
 
   const hasVideo =
     (course.videoProvider === "blob" && course.videoBlobUrl) ||
@@ -130,6 +146,52 @@ export default async function CourseDetailPage({
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <VideoUpload courseId={course.id} />
           <YoutubeVideoForm courseId={course.id} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle className="flex items-center gap-2">
+            <PenLine className="size-4 text-muted-foreground" />
+            Instrutor e assinatura
+          </CardTitle>
+          <CardDescription>
+            {signatureLabel} · usado automaticamente nos certificados das turmas deste treinamento
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={setCourseSignature} className="grid gap-4 sm:grid-cols-2">
+            <input type="hidden" name="id" value={course.id} />
+            <div className="grid gap-2 sm:col-span-2">
+              <Label htmlFor="coordinatorSignatureId">Instrutor</Label>
+              <NativeSelect
+                id="coordinatorSignatureId"
+                name="coordinatorSignatureId"
+                defaultValue={course.coordinatorSignatureId ?? ""}
+              >
+                <option value="">Usar assinatura padrão automaticamente</option>
+                {signatureList.map((signature) => (
+                  <option key={signature.id} value={signature.id}>
+                    {signature.coordinatorName}
+                    {signature.coordinatorRole ? ` — ${signature.coordinatorRole}` : ""}
+                    {signature.isDefault ? " (padrão)" : ""}
+                  </option>
+                ))}
+              </NativeSelect>
+              {signatureList.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Nenhuma assinatura cadastrada ainda. Cadastre uma em{" "}
+                  <Link href="/admin/signatures" className="underline underline-offset-4">
+                    Assinaturas
+                  </Link>
+                  .
+                </p>
+              )}
+            </div>
+            <div className="sm:col-span-2">
+              <SubmitButton pendingText="Salvando…">Salvar instrutor</SubmitButton>
+            </div>
+          </form>
         </CardContent>
       </Card>
 

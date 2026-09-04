@@ -24,6 +24,7 @@ export async function createCourse(formData: FormData) {
   const nrCode = String(formData.get("nrCode") ?? "").trim() || null;
   const description = String(formData.get("description") ?? "").trim() || null;
   const defaultDurationMinutes = Number(formData.get("defaultDurationMinutes") ?? 0) || null;
+  const coordinatorSignatureId = String(formData.get("coordinatorSignatureId") ?? "").trim() || null;
 
   if (!name) throw new Error("Nome do treinamento é obrigatório");
 
@@ -35,6 +36,7 @@ export async function createCourse(formData: FormData) {
       nrCode,
       description,
       defaultDurationMinutes,
+      coordinatorSignatureId,
     })
     .returning({ id: courses.id });
 
@@ -59,6 +61,19 @@ export async function updateCourse(formData: FormData) {
     .where(eq(courses.id, id));
 
   revalidatePath("/admin/courses");
+  revalidatePath(`/admin/courses/${id}`);
+}
+
+export async function setCourseSignature(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const coordinatorSignatureId = String(formData.get("coordinatorSignatureId") ?? "").trim() || null;
+
+  await getDb()
+    .update(courses)
+    .set({ coordinatorSignatureId, updatedAt: new Date() })
+    .where(eq(courses.id, id));
+
   revalidatePath(`/admin/courses/${id}`);
 }
 

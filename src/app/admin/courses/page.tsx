@@ -3,13 +3,14 @@ import { ArrowUpRight, GraduationCap, Video, VideoOff } from "lucide-react";
 import Link from "next/link";
 
 import { getDb } from "@/lib/db";
-import { courses } from "@/lib/db/schema";
+import { certificateSignatures, courses } from "@/lib/db/schema";
 import { createCourse } from "./actions";
 import { PageHeader } from "@/components/admin/page-header";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
@@ -20,10 +21,11 @@ import {
 } from "@/components/ui/card";
 
 export default async function CoursesPage() {
-  const list = await getDb()
-    .select()
-    .from(courses)
-    .orderBy(desc(courses.createdAt));
+  const db = getDb();
+  const [list, signatureList] = await Promise.all([
+    db.select().from(courses).orderBy(desc(courses.createdAt)),
+    db.select().from(certificateSignatures).orderBy(desc(certificateSignatures.isDefault)),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
@@ -37,8 +39,9 @@ export default async function CoursesPage() {
         <CardHeader className="border-b">
           <CardTitle>Novo treinamento</CardTitle>
           <CardDescription>
-            Após criar, você poderá enviar o vídeo (arquivo ou link do YouTube) que será
-            usado automaticamente em todas as turmas deste treinamento.
+            Selecione o instrutor responsável pela assinatura no certificado. Após criar,
+            você poderá enviar o vídeo (arquivo ou link do YouTube). Ambos são usados
+            automaticamente em todas as turmas deste treinamento.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -73,6 +76,28 @@ export default async function CoursesPage() {
                 name="description"
                 placeholder="Breve descrição do conteúdo (opcional)"
               />
+            </div>
+            <div className="grid gap-2 sm:col-span-2">
+              <Label htmlFor="coordinatorSignatureId">Instrutor (assinatura no certificado)</Label>
+              <NativeSelect id="coordinatorSignatureId" name="coordinatorSignatureId" defaultValue="">
+                <option value="">Usar assinatura padrão automaticamente</option>
+                {signatureList.map((signature) => (
+                  <option key={signature.id} value={signature.id}>
+                    {signature.coordinatorName}
+                    {signature.coordinatorRole ? ` — ${signature.coordinatorRole}` : ""}
+                    {signature.isDefault ? " (padrão)" : ""}
+                  </option>
+                ))}
+              </NativeSelect>
+              {signatureList.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Nenhuma assinatura cadastrada ainda. Cadastre uma em{" "}
+                  <Link href="/admin/signatures" className="underline underline-offset-4">
+                    Assinaturas
+                  </Link>
+                  .
+                </p>
+              )}
             </div>
             <div className="sm:col-span-2">
               <SubmitButton pendingText="Adicionando…">
