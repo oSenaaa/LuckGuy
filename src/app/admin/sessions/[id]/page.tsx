@@ -22,7 +22,8 @@ import {
   participants,
   viewingProgress,
 } from "@/lib/db/schema";
-import { archiveSession, publishSession, reissueCertificate } from "../actions";
+import { archiveSession, publishSession } from "../actions";
+import { ReissueCertificateButton } from "./reissue-certificate-button";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
 import { CopyButton } from "@/components/copy-button";
@@ -240,13 +241,10 @@ export default async function SessionDetailPage({
                               Baixar
                             </Link>
                           </Button>
-                          <form action={reissueCertificate}>
-                            <input type="hidden" name="participantId" value={p.id} />
-                            <input type="hidden" name="sessionId" value={session.id} />
-                            <Button type="submit" variant="ghost" size="sm">
-                              Reemitir
-                            </Button>
-                          </form>
+                          <ReissueCertificateButton
+                            participantId={p.id}
+                            sessionId={session.id}
+                          />
                         </div>
                       ) : (
                         <span className="block text-right text-muted-foreground">—</span>

@@ -73,14 +73,18 @@ export async function archiveSession(formData: FormData) {
   revalidatePath(`/admin/sessions/${id}`);
 }
 
-export async function reissueCertificate(formData: FormData) {
+export async function reissueCertificate(participantId: string, sessionId: string) {
   await requireAdmin();
-  const participantId = String(formData.get("participantId") ?? "");
-  const sessionId = String(formData.get("sessionId") ?? "");
+  if (!participantId) return { ok: false as const, error: "Participante inválido." };
+
   try {
     await issueCertificate(participantId, { reissue: true });
   } catch (err) {
     if (!(err instanceof CertificateError)) throw err;
+    console.error("Falha ao reemitir certificado", { participantId, sessionId, error: err });
+    return { ok: false as const, error: err.message };
   }
+
   revalidatePath(`/admin/sessions/${sessionId}`);
+  return { ok: true as const };
 }
