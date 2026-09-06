@@ -11,6 +11,7 @@ import {
 
 import { getDb } from "@/lib/db";
 import { companies, courseSessions, courses } from "@/lib/db/schema";
+import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
 import { Button } from "@/components/ui/button";
@@ -80,25 +81,43 @@ export default async function AdminDashboard() {
             </p>
           ) : (
             <ul className="divide-y divide-border">
-              {recentSessions.map((session) => (
-                <li key={session.id}>
-                  <Link
-                    href={`/admin/sessions/${session.id}`}
-                    className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{session.name}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {session.courseName} · {session.companyName}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <SessionStatusBadge status={session.status} />
-                      <ArrowUpRight className="size-4 text-muted-foreground" />
-                    </div>
-                  </Link>
-                </li>
-              ))}
+              {recentSessions.map((session) => {
+                const isArchived = session.status === "archived";
+                return (
+                  <li key={session.id} className={cn(isArchived && "opacity-60")}>
+                    <Link
+                      href={`/admin/sessions/${session.id}`}
+                      className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+                    >
+                      <span
+                        className={cn(
+                          "size-2 shrink-0 rounded-full",
+                          session.status === "published" && "bg-emerald-500",
+                          session.status === "draft" && "bg-amber-400",
+                          isArchived && "bg-muted-foreground/40",
+                        )}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={cn(
+                            "truncate font-medium",
+                            isArchived && "text-muted-foreground",
+                          )}
+                        >
+                          {session.name}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {session.courseName} · {session.companyName}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <SessionStatusBadge status={session.status} />
+                        <ArrowUpRight className="size-4 text-muted-foreground" />
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </CardContent>
