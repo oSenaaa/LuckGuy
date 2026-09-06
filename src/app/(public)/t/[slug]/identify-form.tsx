@@ -9,6 +9,7 @@ import {
 } from "./actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
+import { DigitsInput } from "@/components/ui/digits-input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/ui/submit-button";
 
@@ -32,12 +33,14 @@ export function IdentifyForm({ accessSlug }: { accessSlug: string }) {
       </div>
       <div className="grid gap-2">
         <Label htmlFor="phone">Telefone</Label>
-        <Input
+        <DigitsInput
           id="phone"
           name="phone"
           required
-          placeholder="(00) 00000-0000"
-          inputMode="tel"
+          maxDigits={11}
+          pattern="\d{10,11}"
+          title="Digite o telefone com DDD (10 ou 11 dígitos), sem pontuação"
+          placeholder="Somente números, com DDD"
           autoComplete="tel"
         />
       </div>

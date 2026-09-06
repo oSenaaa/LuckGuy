@@ -23,7 +23,8 @@ export async function createCourse(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const nrCode = String(formData.get("nrCode") ?? "").trim() || null;
   const description = String(formData.get("description") ?? "").trim() || null;
-  const defaultDurationMinutes = Number(formData.get("defaultDurationMinutes") ?? 0) || null;
+  const defaultDurationHours = Number(formData.get("defaultDurationHours") ?? 0) || null;
+  const defaultDurationMinutes = defaultDurationHours ? Math.round(defaultDurationHours * 60) : null;
   const coordinatorSignatureId = String(formData.get("coordinatorSignatureId") ?? "").trim() || null;
 
   if (!name) throw new Error("Nome do treinamento é obrigatório");
@@ -50,7 +51,8 @@ export async function updateCourse(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const nrCode = String(formData.get("nrCode") ?? "").trim() || null;
   const description = String(formData.get("description") ?? "").trim() || null;
-  const defaultDurationMinutes = Number(formData.get("defaultDurationMinutes") ?? 0) || null;
+  const defaultDurationHours = Number(formData.get("defaultDurationHours") ?? 0) || null;
+  const defaultDurationMinutes = defaultDurationHours ? Math.round(defaultDurationHours * 60) : null;
   const isActive = formData.get("isActive") === "on";
 
   if (!name) throw new Error("Nome do treinamento é obrigatório");

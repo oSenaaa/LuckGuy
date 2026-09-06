@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { Building2, Mail, Phone } from "lucide-react";
+import { Briefcase, Building2, Mail, Phone } from "lucide-react";
 
 import { getDb } from "@/lib/db";
 import { companies, courseSessions, courses } from "@/lib/db/schema";
@@ -59,6 +59,17 @@ export default async function CompanyDetailPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="flex items-start gap-3">
+            <Briefcase className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Posto de trabalho</p>
+              <p className="font-medium">
+                {company.workplace ?? (
+                  <span className="text-muted-foreground">Não informado</span>
+                )}
+              </p>
+            </div>
+          </div>
           <div className="flex items-start gap-3">
             <Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             <div>

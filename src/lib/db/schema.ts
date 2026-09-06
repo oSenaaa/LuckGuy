@@ -25,6 +25,8 @@ export const companies = pgTable("companies", {
   cnpj: text("cnpj").unique(),
   contactEmail: text("contact_email"),
   contactPhone: text("contact_phone"),
+  workplace: text("workplace"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -63,6 +65,7 @@ export const certificateSignatures = pgTable("certificate_signatures", {
   coordinatorRole: text("coordinator_role"),
   signatureImageBlobUrl: text("signature_image_blob_url").notNull(),
   isDefault: boolean("is_default").notNull().default(false),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

@@ -105,13 +105,18 @@ export default async function CourseDetailPage({
               <Input id="nrCode" name="nrCode" defaultValue={course.nrCode ?? ""} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="defaultDurationMinutes">Duração padrão (min)</Label>
+              <Label htmlFor="defaultDurationHours">Duração padrão (horas)</Label>
               <Input
-                id="defaultDurationMinutes"
-                name="defaultDurationMinutes"
+                id="defaultDurationHours"
+                name="defaultDurationHours"
                 type="number"
-                min={1}
-                defaultValue={course.defaultDurationMinutes ?? ""}
+                min={0.5}
+                step={0.5}
+                defaultValue={
+                  course.defaultDurationMinutes
+                    ? course.defaultDurationMinutes / 60
+                    : ""
+                }
               />
             </div>
             <div className="grid gap-2 sm:col-span-2">

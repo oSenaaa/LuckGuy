@@ -78,14 +78,60 @@ export async function createSignature(formData: FormData) {
   return { ok: true as const };
 }
 
-export async function setDefaultSignature(formData: FormData) {
+export async function setDefaultSignature(id: string) {
   await requireAdmin();
-  const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  if (!id) return { ok: false as const, error: "Assinatura inválida." };
   const db = getDb();
+
+  const [target] = await db
+    .select()
+    .from(certificateSignatures)
+    .where(eq(certificateSignatures.id, id))
+    .limit(1);
+  if (!target) return { ok: false as const, error: "Assinatura não encontrada." };
+  if (target.archivedAt) {
+    return { ok: false as const, error: "Desarquive a assinatura antes de torná-la padrão." };
+  }
+
   await db.batch([
     db.update(certificateSignatures).set({ isDefault: false }).where(eq(certificateSignatures.isDefault, true)),
     db.update(certificateSignatures).set({ isDefault: true }).where(eq(certificateSignatures.id, id)),
   ]);
   revalidatePath("/admin/signatures");
+  return { ok: true as const };
+}
+
+export async function archiveSignature(id: string) {
+  await requireAdmin();
+  if (!id) return { ok: false as const, error: "Assinatura inválida." };
+  const db = getDb();
+
+  const [target] = await db
+    .select()
+    .from(certificateSignatures)
+    .where(eq(certificateSignatures.id, id))
+    .limit(1);
+  if (!target) return { ok: false as const, error: "Assinatura não encontrada." };
+  if (target.isDefault) {
+    return { ok: false as const, error: "Torne outra assinatura padrão antes de arquivar esta." };
+  }
+
+  await db
+    .update(certificateSignatures)
+    .set({ archivedAt: new Date(), updatedAt: new Date() })
+    .where(eq(certificateSignatures.id, id));
+  revalidatePath("/admin/signatures");
+  return { ok: true as const };
+}
+
+export async function unarchiveSignature(id: string) {
+  await requireAdmin();
+  if (!id) return { ok: false as const, error: "Assinatura inválida." };
+  const db = getDb();
+  await db
+    .update(certificateSignatures)
+    .set({ archivedAt: null, updatedAt: new Date() })
+    .where(eq(certificateSignatures.id, id));
+  revalidatePath("/admin/signatures");
+  return { ok: true as const };
 }

@@ -22,8 +22,8 @@ export async function identifyParticipant(
   const fullName = String(formData.get("fullName") ?? "").trim();
   const phone = normalizePhone(String(formData.get("phone") ?? ""));
 
-  if (!fullName || phone.length < 10) {
-    return { error: "Informe um nome e um telefone válidos." };
+  if (!fullName || phone.length < 10 || phone.length > 11) {
+    return { error: "Informe um nome e um telefone válido, com DDD (10 ou 11 dígitos)." };
   }
 
   try {
