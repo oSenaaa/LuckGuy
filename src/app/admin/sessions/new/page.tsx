@@ -4,12 +4,12 @@ import { CalendarPlus } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { companies, courses } from "@/lib/db/schema";
 import { createSession } from "../actions";
+import { CompanyCombobox } from "./company-combobox";
+import { CourseAndDurationFields } from "./course-and-duration-fields";
 import { PageHeader } from "@/components/admin/page-header";
-import { DurationInput } from "@/components/admin/duration-input";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
 import {
   Card,
   CardContent,
@@ -43,38 +43,20 @@ export default async function NewSessionPage() {
         </CardHeader>
         <CardContent>
           <form action={createSession} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="courseId">Treinamento</Label>
-              <NativeSelect id="courseId" name="courseId" required defaultValue="">
-                <option value="" disabled>
-                  Selecione um treinamento
-                </option>
-                {courseList.map((course) => {
-                  const hasVideo =
-                    (course.videoProvider === "blob" && course.videoBlobUrl) ||
-                    (course.videoProvider === "youtube" && course.videoYoutubeId);
-                  return (
-                    <option key={course.id} value={course.id}>
-                      {course.name}
-                      {!hasVideo ? " (sem vídeo)" : ""}
-                    </option>
-                  );
-                })}
-              </NativeSelect>
-            </div>
+            <CourseAndDurationFields
+              courses={courseList.map((course) => ({
+                id: course.id,
+                name: course.name,
+                hasVideo:
+                  (course.videoProvider === "blob" && Boolean(course.videoBlobUrl)) ||
+                  (course.videoProvider === "youtube" && Boolean(course.videoYoutubeId)),
+                defaultDurationMinutes: course.defaultDurationMinutes,
+              }))}
+            />
 
             <div className="grid gap-2">
               <Label htmlFor="companyId">Empresa cliente</Label>
-              <NativeSelect id="companyId" name="companyId" required defaultValue="">
-                <option value="" disabled>
-                  Selecione uma empresa
-                </option>
-                {companyList.map((company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.name}
-                  </option>
-                ))}
-              </NativeSelect>
+              <CompanyCombobox companies={companyList} />
             </div>
 
             <div className="grid gap-2">
@@ -85,11 +67,6 @@ export default async function NewSessionPage() {
                 required
                 placeholder="Ex: NR-01 - Agosto/2026 - Empresa X"
               />
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Carga horária</Label>
-              <DurationInput valueName="workloadValue" unitName="workloadUnit" required />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">

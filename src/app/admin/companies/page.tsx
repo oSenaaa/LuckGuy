@@ -1,11 +1,10 @@
 import { desc } from "drizzle-orm";
-import { ArrowUpRight, Building2 } from "lucide-react";
-import Link from "next/link";
+import { Building2 } from "lucide-react";
 
 import { getDb } from "@/lib/db";
 import { companies } from "@/lib/db/schema";
 import { createCompany } from "./actions";
-import { CompanyRowActions } from "./company-row-actions";
+import { CompanyList } from "./company-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +23,6 @@ export default async function CompaniesPage() {
     .select()
     .from(companies)
     .orderBy(desc(companies.createdAt));
-
-  const active = list.filter((company) => !company.archivedAt);
-  const archived = list.filter((company) => company.archivedAt);
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
@@ -93,85 +89,7 @@ export default async function CompaniesPage() {
       </Card>
 
       <Card>
-        <CardHeader className="border-b">
-          <CardTitle>Empresas cadastradas</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {list.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Nenhuma empresa cadastrada.
-            </p>
-          ) : (
-            <>
-              <ul className="divide-y divide-border">
-                {active.map((company) => (
-                  <li
-                    key={company.id}
-                    className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-                  >
-                    <Link
-                      href={`/admin/companies/${company.id}`}
-                      className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 transition-colors hover:text-foreground"
-                    >
-                      <span className="font-medium">{company.name}</span>
-                      {company.cnpj && (
-                        <span className="text-xs text-muted-foreground">
-                          {company.cnpj}
-                        </span>
-                      )}
-                      <ArrowUpRight className="size-4 text-muted-foreground" />
-                    </Link>
-                    <CompanyRowActions
-                      id={company.id}
-                      name={company.name}
-                      cnpj={company.cnpj}
-                      workplace={company.workplace}
-                      contactEmail={company.contactEmail}
-                      contactPhone={company.contactPhone}
-                      isArchived={false}
-                    />
-                  </li>
-                ))}
-              </ul>
-
-              {archived.length > 0 && (
-                <details className="border-t">
-                  <summary className="cursor-pointer px-4 py-3 text-sm text-muted-foreground select-none marker:text-muted-foreground">
-                    Arquivadas ({archived.length})
-                  </summary>
-                  <ul className="divide-y divide-border border-t">
-                    {archived.map((company) => (
-                      <li
-                        key={company.id}
-                        className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-muted-foreground"
-                      >
-                        <Link
-                          href={`/admin/companies/${company.id}`}
-                          className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 transition-colors hover:text-foreground"
-                        >
-                          <span className="font-medium">{company.name}</span>
-                          {company.cnpj && (
-                            <span className="text-xs">{company.cnpj}</span>
-                          )}
-                          <ArrowUpRight className="size-4" />
-                        </Link>
-                        <CompanyRowActions
-                          id={company.id}
-                          name={company.name}
-                          cnpj={company.cnpj}
-                          workplace={company.workplace}
-                          contactEmail={company.contactEmail}
-                          contactPhone={company.contactPhone}
-                          isArchived
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-            </>
-          )}
-        </CardContent>
+        <CompanyList companies={list} />
       </Card>
     </div>
   );
