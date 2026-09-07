@@ -24,6 +24,7 @@ import {
 } from "@/lib/db/schema";
 import { archiveSession, publishSession } from "../actions";
 import { ReissueCertificateButton } from "./reissue-certificate-button";
+import { formatWorkload } from "@/lib/workload";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
 import { CopyButton } from "@/components/copy-button";
@@ -120,7 +121,7 @@ export default async function SessionDetailPage({
       <PageHeader
         icon={Users}
         title={session.name}
-        description={`${session.courseName} · ${session.companyName} · ${Number(session.workloadHours)}h`}
+        description={`${session.courseName} · ${session.companyName} · ${formatWorkload(Number(session.workloadHours))}`}
       >
         <SessionStatusBadge status={session.status} />
       </PageHeader>

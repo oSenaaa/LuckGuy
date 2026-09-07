@@ -3,6 +3,7 @@ import { CheckCircle2, FileText, XCircle } from "lucide-react";
 
 import { getDb } from "@/lib/db";
 import { certificates } from "@/lib/db/schema";
+import { formatWorkload } from "@/lib/workload";
 import { StatusCard } from "@/components/status-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,7 +44,7 @@ export default async function VerifyCertificatePage({
   const rows = [
     { label: "Nome", value: certificate.participantNameSnapshot },
     { label: "Treinamento", value: certificate.courseNameSnapshot },
-    { label: "Carga horária", value: `${Number(certificate.workloadHoursSnapshot)}h` },
+    { label: "Carga horária", value: formatWorkload(Number(certificate.workloadHoursSnapshot)) },
     {
       label: "Emitido em",
       value: new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(

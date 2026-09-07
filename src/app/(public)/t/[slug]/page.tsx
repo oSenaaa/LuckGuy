@@ -5,6 +5,7 @@ import { CalendarClock, CalendarX, GraduationCap } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { courseSessions, courses } from "@/lib/db/schema";
 import { getParticipantId } from "@/lib/participant-session";
+import { formatWorkload } from "@/lib/workload";
 import { IdentifyForm } from "./identify-form";
 import { StatusCard } from "@/components/status-card";
 import {
@@ -94,7 +95,7 @@ export default async function IdentifyPage({
           </span>
           <CardTitle className="text-lg">{session.courseName}</CardTitle>
           <CardDescription>
-            Carga horária: {Number(session.workloadHours)}h. Informe seus dados para
+            Carga horária: {formatWorkload(Number(session.workloadHours))}. Informe seus dados para
             confirmar a presença e assistir ao treinamento.
           </CardDescription>
         </CardHeader>

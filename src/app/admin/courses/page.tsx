@@ -6,6 +6,7 @@ import { getDb } from "@/lib/db";
 import { certificateSignatures, courses } from "@/lib/db/schema";
 import { createCourse } from "./actions";
 import { PageHeader } from "@/components/admin/page-header";
+import { DurationInput } from "@/components/admin/duration-input";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -60,15 +61,8 @@ export default async function CoursesPage() {
               <Input id="nrCode" name="nrCode" placeholder="Ex: NR-01" />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="defaultDurationHours">Duração padrão (horas)</Label>
-              <Input
-                id="defaultDurationHours"
-                name="defaultDurationHours"
-                type="number"
-                min={0.5}
-                step={0.5}
-                placeholder="Ex: 2"
-              />
+              <Label>Duração padrão</Label>
+              <DurationInput valueName="defaultDurationValue" unitName="defaultDurationUnit" />
             </div>
             <div className="grid gap-2 sm:col-span-2">
               <Label htmlFor="description">Descrição</Label>

@@ -18,13 +18,28 @@ function slugify(name: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+function parseDefaultDurationMinutes(formData: FormData): number | null {
+  const value = Number(formData.get("defaultDurationValue") ?? 0);
+  const unit = String(formData.get("defaultDurationUnit") ?? "hours");
+
+  if (!value || value <= 0) return null;
+
+  if (unit === "minutes") {
+    if (value < 1 || value > 59) {
+      throw new Error("Duração em minutos deve ser entre 1 e 59");
+    }
+    return Math.round(value);
+  }
+
+  return Math.round(value * 60);
+}
+
 export async function createCourse(formData: FormData) {
   await requireAdmin();
   const name = String(formData.get("name") ?? "").trim();
   const nrCode = String(formData.get("nrCode") ?? "").trim() || null;
   const description = String(formData.get("description") ?? "").trim() || null;
-  const defaultDurationHours = Number(formData.get("defaultDurationHours") ?? 0) || null;
-  const defaultDurationMinutes = defaultDurationHours ? Math.round(defaultDurationHours * 60) : null;
+  const defaultDurationMinutes = parseDefaultDurationMinutes(formData);
   const coordinatorSignatureId = String(formData.get("coordinatorSignatureId") ?? "").trim() || null;
 
   if (!name) throw new Error("Nome do treinamento é obrigatório");
@@ -51,8 +66,7 @@ export async function updateCourse(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const nrCode = String(formData.get("nrCode") ?? "").trim() || null;
   const description = String(formData.get("description") ?? "").trim() || null;
-  const defaultDurationHours = Number(formData.get("defaultDurationHours") ?? 0) || null;
-  const defaultDurationMinutes = defaultDurationHours ? Math.round(defaultDurationHours * 60) : null;
+  const defaultDurationMinutes = parseDefaultDurationMinutes(formData);
   const isActive = formData.get("isActive") === "on";
 
   if (!name) throw new Error("Nome do treinamento é obrigatório");

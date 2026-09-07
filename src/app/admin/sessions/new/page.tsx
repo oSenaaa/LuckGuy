@@ -5,6 +5,7 @@ import { getDb } from "@/lib/db";
 import { companies, courses } from "@/lib/db/schema";
 import { createSession } from "../actions";
 import { PageHeader } from "@/components/admin/page-header";
+import { DurationInput } from "@/components/admin/duration-input";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,16 +88,8 @@ export default async function NewSessionPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="workloadHours">Carga horária (horas)</Label>
-              <Input
-                id="workloadHours"
-                name="workloadHours"
-                type="number"
-                min={0.5}
-                step={0.5}
-                required
-                placeholder="Ex: 2"
-              />
+              <Label>Carga horária</Label>
+              <DurationInput valueName="workloadValue" unitName="workloadUnit" required />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">

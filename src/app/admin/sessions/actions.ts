@@ -13,12 +13,28 @@ function parseBrasiliaDateTime(value: string) {
   return value ? new Date(`${value}-03:00`) : null;
 }
 
+function parseWorkloadHours(formData: FormData): number {
+  const value = Number(formData.get("workloadValue") ?? 0);
+  const unit = String(formData.get("workloadUnit") ?? "hours");
+
+  if (!value || value <= 0) return 0;
+
+  if (unit === "minutes") {
+    if (value < 1 || value > 59) {
+      throw new Error("Carga horária em minutos deve ser entre 1 e 59");
+    }
+    return value / 60;
+  }
+
+  return value;
+}
+
 export async function createSession(formData: FormData) {
   const userId = await requireAdmin();
   const courseId = String(formData.get("courseId") ?? "");
   const companyId = String(formData.get("companyId") ?? "");
   const name = String(formData.get("name") ?? "").trim();
-  const workloadHours = Number(formData.get("workloadHours") ?? 0);
+  const workloadHours = parseWorkloadHours(formData);
   const startsAtRaw = String(formData.get("startsAt") ?? "");
   const endsAtRaw = String(formData.get("endsAt") ?? "");
 

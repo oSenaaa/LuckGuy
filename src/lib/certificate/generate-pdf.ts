@@ -1,4 +1,5 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from "pdf-lib";
+import { formatWorkload } from "@/lib/workload";
 
 export type CertificateData = {
   participantName: string;
@@ -138,7 +139,7 @@ export async function generateCertificatePdf({
 
   drawCentered(page, data.participantName, positions.participantName, boldFont);
   drawCentered(page, data.courseName, positions.courseName, boldFont);
-  drawCentered(page, String(data.workloadHours), positions.workloadHours, regularFont);
+  drawCentered(page, formatWorkload(data.workloadHours), positions.workloadHours, regularFont);
   drawCentered(page, `Emitido em ${formatDate(data.issuedAt)}`, positions.issuedAt, regularFont);
   drawCentered(page, `Código de validação: ${data.verificationCode}`, positions.verificationCode, regularFont);
 

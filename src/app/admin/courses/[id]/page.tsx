@@ -7,6 +7,7 @@ import { getDb } from "@/lib/db";
 import { certificateSignatures, companies, courses, courseSessions } from "@/lib/db/schema";
 import { deleteCourse, setCourseSignature, updateCourse } from "../actions";
 import { VideoUpload } from "./video-upload";
+import { DurationInput } from "@/components/admin/duration-input";
 import { YoutubeVideoForm } from "./youtube-video-form";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
@@ -64,6 +65,13 @@ export default async function CourseDetailPage({
       ? `Assinatura padrão: ${defaultSignature.coordinatorName}`
       : "Nenhuma assinatura cadastrada ainda";
 
+  const durationUnit = course.defaultDurationMinutes && course.defaultDurationMinutes < 60 ? "minutes" : "hours";
+  const durationValue = course.defaultDurationMinutes
+    ? durationUnit === "minutes"
+      ? course.defaultDurationMinutes
+      : course.defaultDurationMinutes / 60
+    : undefined;
+
   const hasVideo =
     (course.videoProvider === "blob" && course.videoBlobUrl) ||
     (course.videoProvider === "youtube" && course.videoYoutubeId);
@@ -105,18 +113,12 @@ export default async function CourseDetailPage({
               <Input id="nrCode" name="nrCode" defaultValue={course.nrCode ?? ""} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="defaultDurationHours">Duração padrão (horas)</Label>
-              <Input
-                id="defaultDurationHours"
-                name="defaultDurationHours"
-                type="number"
-                min={0.5}
-                step={0.5}
-                defaultValue={
-                  course.defaultDurationMinutes
-                    ? course.defaultDurationMinutes / 60
-                    : ""
-                }
+              <Label>Duração padrão</Label>
+              <DurationInput
+                valueName="defaultDurationValue"
+                unitName="defaultDurationUnit"
+                defaultUnit={durationUnit}
+                defaultValue={durationValue}
               />
             </div>
             <div className="grid gap-2 sm:col-span-2">
