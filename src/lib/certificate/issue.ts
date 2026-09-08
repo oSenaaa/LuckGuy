@@ -12,6 +12,7 @@ import {
 } from "@/lib/db/schema";
 import { generateCertificatePdf, DEFAULT_TEXT_POSITIONS, TextPositions } from "./generate-pdf";
 import { generateVerificationCode } from "./verification-code";
+import { resolveWorkloadHours } from "@/lib/workload";
 
 export class CertificateError extends Error {}
 
@@ -79,7 +80,7 @@ export async function issueCertificate(participantId: string, { reissue = false 
   ]);
 
   const issuedAt = new Date();
-  const workloadHours = Number(session.workloadHours);
+  const workloadHours = resolveWorkloadHours(course.defaultDurationMinutes, Number(session.workloadHours));
   const positions = (template.textPositions as TextPositions | null) ?? DEFAULT_TEXT_POSITIONS;
   const verificationCode = existingCert?.verificationCode ?? generateVerificationCode();
 

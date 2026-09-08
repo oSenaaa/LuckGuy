@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
-import { DurationInput } from "@/components/admin/duration-input";
+import { formatWorkload } from "@/lib/workload";
 
 type Course = {
   id: string;
@@ -15,16 +15,6 @@ type Course = {
 export function CourseAndDurationFields({ courses }: { courses: Course[] }) {
   const [courseId, setCourseId] = useState("");
   const selectedCourse = courses.find((course) => course.id === courseId);
-
-  const durationUnit =
-    selectedCourse?.defaultDurationMinutes && selectedCourse.defaultDurationMinutes < 60
-      ? "minutes"
-      : "hours";
-  const durationValue = selectedCourse?.defaultDurationMinutes
-    ? durationUnit === "minutes"
-      ? selectedCourse.defaultDurationMinutes
-      : selectedCourse.defaultDurationMinutes / 60
-    : undefined;
 
   return (
     <>
@@ -51,17 +41,18 @@ export function CourseAndDurationFields({ courses }: { courses: Course[] }) {
 
       <div className="grid gap-2">
         <Label>Carga horária</Label>
-        <DurationInput
-          key={courseId}
-          valueName="workloadValue"
-          unitName="workloadUnit"
-          defaultUnit={durationUnit}
-          defaultValue={durationValue}
-          required
-        />
-        {selectedCourse && !selectedCourse.defaultDurationMinutes && (
-          <p className="text-xs text-muted-foreground">
-            Este treinamento não tem duração padrão cadastrada — informe manualmente.
+        {!selectedCourse ? (
+          <p className="text-sm text-muted-foreground">
+            Selecione um treinamento para ver a carga horária.
+          </p>
+        ) : selectedCourse.defaultDurationMinutes ? (
+          <p className="rounded-lg border border-input bg-muted/40 px-2.5 py-1.5 text-sm">
+            {formatWorkload(selectedCourse.defaultDurationMinutes / 60)}
+          </p>
+        ) : (
+          <p className="text-sm text-destructive">
+            Este treinamento não tem duração padrão cadastrada. Configure em Treinamentos
+            antes de criar a turma.
           </p>
         )}
       </div>

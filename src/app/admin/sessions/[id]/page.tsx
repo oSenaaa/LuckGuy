@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { and, eq, isNull } from "drizzle-orm";
 import {
   Archive,
+  CalendarRange,
   CheckCircle2,
   Download,
   ExternalLink,
@@ -24,7 +25,8 @@ import {
 } from "@/lib/db/schema";
 import { archiveSession, publishSession } from "../actions";
 import { ReissueCertificateButton } from "./reissue-certificate-button";
-import { formatWorkload } from "@/lib/workload";
+import { BulkReissueButton } from "./bulk-reissue-button";
+import { formatWorkload, resolveWorkloadHours } from "@/lib/workload";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
 import { CopyButton } from "@/components/copy-button";
@@ -32,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -64,11 +67,14 @@ export default async function SessionDetailPage({
       minWatchPercent: courseSessions.minWatchPercent,
       courseId: courses.id,
       courseName: courses.name,
+      defaultDurationMinutes: courses.defaultDurationMinutes,
       videoProvider: courses.videoProvider,
       videoBlobUrl: courses.videoBlobUrl,
       videoYoutubeId: courses.videoYoutubeId,
       videoDurationSeconds: courses.videoDurationSeconds,
       companyName: companies.name,
+      startsAt: courseSessions.startsAt,
+      endsAt: courseSessions.endsAt,
     })
     .from(courseSessions)
     .innerJoin(courses, eq(courses.id, courseSessions.courseId))
@@ -99,6 +105,8 @@ export default async function SessionDetailPage({
     )
     .where(eq(participants.courseSessionId, id));
 
+  const participantsWithCertificate = participantsList.filter((p) => p.certificateUrl);
+
   const publicPath = `/t/${session.accessSlug}`;
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
@@ -116,15 +124,53 @@ export default async function SessionDetailPage({
     ? `${Math.round(session.videoDurationSeconds / 60)} min`
     : null;
 
+  const formatBrasiliaDateTime = (date: Date) =>
+    new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+      timeZone: "America/Sao_Paulo",
+    }).format(date);
+
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
       <PageHeader
         icon={Users}
         title={session.name}
-        description={`${session.courseName} · ${session.companyName} · ${formatWorkload(Number(session.workloadHours))}`}
+        description={`${session.courseName} · ${session.companyName} · ${formatWorkload(resolveWorkloadHours(session.defaultDurationMinutes, Number(session.workloadHours)))}`}
       >
         <SessionStatusBadge status={session.status} />
       </PageHeader>
+
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle className="flex items-center gap-2">
+            <CalendarRange className="size-4 text-muted-foreground" />
+            Período da turma
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="text-xs text-muted-foreground">Início</p>
+            <p className="font-medium">
+              {session.startsAt ? (
+                formatBrasiliaDateTime(session.startsAt)
+              ) : (
+                <span className="text-muted-foreground">Sem data definida</span>
+              )}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Fim</p>
+            <p className="font-medium">
+              {session.endsAt ? (
+                formatBrasiliaDateTime(session.endsAt)
+              ) : (
+                <span className="text-muted-foreground">Sem data definida</span>
+              )}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="border-b">
@@ -198,6 +244,20 @@ export default async function SessionDetailPage({
             Participantes
             <Badge variant="secondary">{participantsList.length}</Badge>
           </CardTitle>
+          {participantsWithCertificate.length > 0 && (
+            <CardAction className="flex items-center gap-2">
+              <BulkReissueButton
+                participantIds={participantsWithCertificate.map((p) => p.id)}
+                sessionId={session.id}
+              />
+              <Button asChild variant="outline" size="sm">
+                <a href={`/api/sessions/${id}/certificates/download`}>
+                  <Download />
+                  Baixar todos (ZIP)
+                </a>
+              </Button>
+            </CardAction>
+          )}
         </CardHeader>
         <CardContent className="p-0">
           {participantsList.length === 0 ? (
