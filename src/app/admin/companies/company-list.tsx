@@ -30,6 +30,13 @@ function onlyDigits(value: string) {
   return value.replace(/\D/g, "");
 }
 
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+}
+
 function CompanyRow({ company }: { company: Company }) {
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -70,7 +77,8 @@ export function CompanyList({ companies }: { companies: Company[] }) {
       return companies.filter((company) => onlyDigits(company.cnpj ?? "").includes(digits));
     }
 
-    return companies.filter((company) => company.name.toLowerCase().includes(term));
+    const normalizedTerm = normalizeText(term);
+    return companies.filter((company) => normalizeText(company.name).includes(normalizedTerm));
   }, [companies, query, searchBy]);
 
   const active = filtered.filter((company) => !company.archivedAt);
