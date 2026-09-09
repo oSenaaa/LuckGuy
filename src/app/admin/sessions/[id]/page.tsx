@@ -27,6 +27,7 @@ import { archiveSession, publishSession } from "../actions";
 import { ReissueCertificateButton } from "./reissue-certificate-button";
 import { BulkReissueButton } from "./bulk-reissue-button";
 import { formatWorkload, resolveWorkloadHours } from "@/lib/workload";
+import { archiveExpiredSessions } from "@/lib/sessions";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
 import { CopyButton } from "@/components/copy-button";
@@ -56,6 +57,8 @@ export default async function SessionDetailPage({
 }) {
   const { id } = await params;
   const db = getDb();
+
+  await archiveExpiredSessions();
 
   const [session] = await db
     .select({

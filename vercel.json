@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/archive-expired-sessions",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}

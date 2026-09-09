@@ -5,6 +5,7 @@ import { ArrowUpRight, CalendarClock, Plus } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { companies, courseSessions, courses } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
+import { archiveExpiredSessions } from "@/lib/sessions";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,8 @@ export default async function SessionsPage({
 }) {
   const { status } = await searchParams;
   const showArchived = status === "archived";
+
+  await archiveExpiredSessions();
 
   const db = getDb();
   const [list, [{ archivedCount }], [{ totalCount }]] = await Promise.all([
