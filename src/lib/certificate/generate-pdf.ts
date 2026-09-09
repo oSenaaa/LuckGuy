@@ -51,7 +51,7 @@ const PAGE_BACKGROUND: RGB = [0.954, 0.954, 0.955];
  */
 export const DEFAULT_TEXT_POSITIONS: TextPositions = {
   participantName: { x: 746, y: 534, size: 44, maxWidth: 850, color: BRAND_MAROON },
-  courseName: { x: 741, y: 421, size: 34, maxWidth: 620, color: BRAND_MAROON },
+  courseName: { x: 741, y: 430, size: 34, maxWidth: 620, color: BRAND_MAROON },
   workloadHours: { x: 847, y: 367, size: 26, maxWidth: 200, color: BRAND_MAROON },
   issuedAt: { x: 1220, y: 79, size: 15, maxWidth: 420, color: META_GRAY },
   verificationCode: { x: 1220, y: 54, size: 13, maxWidth: 420, color: META_GRAY },
@@ -134,8 +134,8 @@ export async function generateCertificatePdf({
   const page = pdfDoc.addPage([width, height]);
   page.drawImage(bgImage, { x: 0, y: 0, width, height });
 
-  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const boldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+  const regularFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
 
   drawCentered(page, data.participantName, positions.participantName, boldFont);
   drawCentered(page, data.courseName, positions.courseName, boldFont);
