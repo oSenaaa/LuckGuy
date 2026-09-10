@@ -50,6 +50,7 @@ type Props = {
   youtubeId: string | null;
   minWatchPercent: number;
   initialCurrentTime: number;
+  initialMaxTimeReached: number;
   initialWatchedPercent: number;
   initialCompleted: boolean;
   initialCertificateUrl: string | null;
@@ -63,9 +64,11 @@ type PlayerControlsProps = {
   isMuted: boolean;
   isPlaying: boolean;
   playbackRate: number;
+  portalContainer: HTMLElement | null;
   ready: boolean;
   volume: number;
   onPlaybackRateChange: (rate: number) => void;
+  onSeek: (seconds: number) => void;
   onToggleFullscreen: () => void;
   onToggleMute: () => void;
   onTogglePlayback: () => void;
@@ -112,9 +115,11 @@ function PlayerControls({
   isMuted,
   isPlaying,
   playbackRate,
+  portalContainer,
   ready,
   volume,
   onPlaybackRateChange,
+  onSeek,
   onToggleFullscreen,
   onToggleMute,
   onTogglePlayback,
@@ -124,87 +129,104 @@ function PlayerControls({
     <div
       role="group"
       aria-label="Controles do vídeo"
-      className="absolute inset-x-0 bottom-0 z-20 flex items-center gap-2 bg-linear-to-t from-black/90 via-black/60 to-transparent px-3 pb-3 pt-8 text-white"
+      className="absolute inset-x-0 bottom-0 z-20 flex flex-col gap-1.5 bg-linear-to-t from-black/90 via-black/60 to-transparent px-3 pb-3 pt-8 text-white"
     >
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-lg"
-        disabled={!ready}
-        onClick={onTogglePlayback}
-        aria-label={isPlaying ? "Pausar vídeo" : "Reproduzir vídeo"}
-        className="text-white hover:bg-white/15 hover:text-white focus-visible:border-white/50 focus-visible:ring-white/40"
-      >
-        {isPlaying ? <Pause /> : <Play />}
-      </Button>
-
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-lg"
-        disabled={!ready}
-        onClick={onToggleMute}
-        aria-label={isMuted || volume === 0 ? "Ativar som" : "Silenciar"}
-        className="text-white hover:bg-white/15 hover:text-white focus-visible:border-white/50 focus-visible:ring-white/40"
-      >
-        <VolumeIcon muted={isMuted} volume={volume} />
-      </Button>
-
       <Slider
-        aria-label="Volume"
-        disabled={!ready}
+        aria-label="Progresso do vídeo"
+        disabled={!ready || duration <= 0}
         min={0}
-        max={100}
-        step={1}
-        value={[isMuted ? 0 : volume]}
-        onValueChange={([nextVolume]) => onVolumeChange(nextVolume)}
-        className="hidden w-20 sm:flex [&_[data-slot=slider-range]]:bg-white [&_[data-slot=slider-thumb]]:border-white [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-track]]:bg-white/25"
+        max={duration > 0 ? duration : 1}
+        step={0.1}
+        value={[Math.min(currentTime, duration > 0 ? duration : currentTime)]}
+        onValueChange={([nextTime]) => onSeek(nextTime)}
+        className="[&_[data-slot=slider-range]]:bg-white [&_[data-slot=slider-thumb]]:border-white [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-track]]:bg-white/25"
       />
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-lg"
+          disabled={!ready}
+          onClick={onTogglePlayback}
+          aria-label={isPlaying ? "Pausar vídeo" : "Reproduzir vídeo"}
+          className="text-white hover:bg-white/15 hover:text-white focus-visible:border-white/50 focus-visible:ring-white/40"
+        >
+          {isPlaying ? <Pause /> : <Play />}
+        </Button>
 
-      <span className="text-xs tabular-nums text-white/85" aria-hidden="true">
-        {formatTime(currentTime)} / {formatTime(duration)}
-      </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-lg"
+          disabled={!ready}
+          onClick={onToggleMute}
+          aria-label={isMuted || volume === 0 ? "Ativar som" : "Silenciar"}
+          className="text-white hover:bg-white/15 hover:text-white focus-visible:border-white/50 focus-visible:ring-white/40"
+        >
+          <VolumeIcon muted={isMuted} volume={volume} />
+        </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={!ready}
-            aria-label={`Velocidade de reprodução: ${formatPlaybackRate(playbackRate)}`}
-            className="ml-auto min-w-18 text-white hover:bg-white/15 hover:text-white focus-visible:border-white/50 focus-visible:ring-white/40"
+        <Slider
+          aria-label="Volume"
+          disabled={!ready}
+          min={0}
+          max={100}
+          step={1}
+          value={[isMuted ? 0 : volume]}
+          onValueChange={([nextVolume]) => onVolumeChange(nextVolume)}
+          className="hidden w-20 sm:flex [&_[data-slot=slider-range]]:bg-white [&_[data-slot=slider-thumb]]:border-white [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-track]]:bg-white/25"
+        />
+
+        <span className="text-xs tabular-nums text-white/85" aria-hidden="true">
+          {formatTime(currentTime)} / {formatTime(duration)}
+        </span>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={!ready}
+              aria-label={`Velocidade de reprodução: ${formatPlaybackRate(playbackRate)}`}
+              className="ml-auto min-w-18 text-white hover:bg-white/15 hover:text-white focus-visible:border-white/50 focus-visible:ring-white/40"
+            >
+              <Gauge />
+              {formatPlaybackRate(playbackRate)}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="top"
+            align="end"
+            container={portalContainer}
+            className="min-w-32"
           >
-            <Gauge />
-            {formatPlaybackRate(playbackRate)}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="top" align="end" className="min-w-32">
-          <DropdownMenuLabel>Velocidade</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={String(playbackRate)}
-            onValueChange={(value) => onPlaybackRateChange(Number(value))}
-          >
-            {availablePlaybackRates.map((rate) => (
-              <DropdownMenuRadioItem key={rate} value={String(rate)}>
-                {formatPlaybackRate(rate)}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <DropdownMenuLabel>Velocidade</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={String(playbackRate)}
+              onValueChange={(value) => onPlaybackRateChange(Number(value))}
+            >
+              {availablePlaybackRates.map((rate) => (
+                <DropdownMenuRadioItem key={rate} value={String(rate)}>
+                  {formatPlaybackRate(rate)}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-lg"
-        disabled={!ready}
-        onClick={onToggleFullscreen}
-        aria-label={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
-        className="text-white hover:bg-white/15 hover:text-white focus-visible:border-white/50 focus-visible:ring-white/40"
-      >
-        {isFullscreen ? <Minimize /> : <Maximize />}
-      </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-lg"
+          disabled={!ready}
+          onClick={onToggleFullscreen}
+          aria-label={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
+          className="text-white hover:bg-white/15 hover:text-white focus-visible:border-white/50 focus-visible:ring-white/40"
+        >
+          {isFullscreen ? <Minimize /> : <Maximize />}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -216,19 +238,21 @@ export function VideoPlayer({
   youtubeId,
   minWatchPercent,
   initialCurrentTime,
+  initialMaxTimeReached,
   initialWatchedPercent,
   initialCompleted,
   initialCertificateUrl,
 }: Props) {
+  const initialSeekCeiling = Math.max(0, initialCurrentTime, initialMaxTimeReached);
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const youtubePlayerRef = useRef<YoutubePlayer | null>(null);
-  const lastAllowedBlobTimeRef = useRef(Math.max(0, initialCurrentTime));
+  const lastAllowedBlobTimeRef = useRef(initialSeekCeiling);
   const internalBlobSeekTargetRef = useRef<number | null>(null);
   const correctingBlobSeekTargetRef = useRef<number | null>(null);
   const heartbeatRequestSequenceRef = useRef(0);
   const lastAppliedHeartbeatSequenceRef = useRef(0);
-  const lastAllowedYoutubeTimeRef = useRef(Math.max(0, initialCurrentTime));
+  const lastAllowedYoutubeTimeRef = useRef(initialSeekCeiling);
   const lastYoutubeSampleAtRef = useRef<number | null>(null);
   const pendingYoutubeSeekRef = useRef<PendingYoutubeSeek | null>(null);
   const youtubePlaybackRateRef = useRef(1);
@@ -250,6 +274,11 @@ export function VideoPlayer({
   const [volume, setVolume] = useState(DEFAULT_VOLUME);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalContainer(containerRef.current);
+  }, []);
 
   const getCurrentTime = useCallback(() => {
     if (provider === "blob") return videoRef.current?.currentTime ?? 0;
@@ -353,6 +382,10 @@ export function VideoPlayer({
               videoDuration > 0
                 ? Math.min(requestedResumeTime, videoDuration)
                 : requestedResumeTime;
+            const seekCeiling =
+              videoDuration > 0
+                ? Math.min(Math.max(resumeAt, initialSeekCeiling), videoDuration)
+                : Math.max(resumeAt, initialSeekCeiling);
             const supportedRates = event.target
               .getAvailablePlaybackRates()
               .filter(
@@ -365,7 +398,7 @@ export function VideoPlayer({
             setCurrentTime(resumeAt);
             setDuration(videoDuration);
             setAvailablePlaybackRates(supportedRates.length > 0 ? supportedRates : [1]);
-            lastAllowedYoutubeTimeRef.current = resumeAt;
+            lastAllowedYoutubeTimeRef.current = seekCeiling;
             lastYoutubeSampleAtRef.current = performance.now();
             lastYoutubePlayerStateRef.current = event.target.getPlayerState();
             setPlayerReady(true);
@@ -379,7 +412,10 @@ export function VideoPlayer({
 
             if (playing && !hasYoutubePlaybackStartedRef.current) {
               hasYoutubePlaybackStartedRef.current = true;
-              lastAllowedYoutubeTimeRef.current = observedTime;
+              lastAllowedYoutubeTimeRef.current = Math.max(
+                lastAllowedYoutubeTimeRef.current,
+                observedTime,
+              );
             } else if (pendingYoutubeSeekRef.current === null) {
               const sampledAt = lastYoutubeSampleAtRef.current ?? now;
               const elapsedSeconds = Math.max(0, (now - sampledAt) / 1000);
@@ -388,13 +424,11 @@ export function VideoPlayer({
                   ? elapsedSeconds * youtubePlaybackRateRef.current
                   : 0;
               const previousTime = lastAllowedYoutubeTimeRef.current;
-              const plausiblePosition =
-                observedTime <=
-                  previousTime + allowedAdvance + YOUTUBE_SEEK_TOLERANCE_SECONDS &&
-                observedTime >= previousTime - YOUTUBE_SEEK_TOLERANCE_SECONDS;
+              const plausibleAdvance =
+                observedTime <= previousTime + allowedAdvance + YOUTUBE_SEEK_TOLERANCE_SECONDS;
 
-              if (plausiblePosition) {
-                lastAllowedYoutubeTimeRef.current = observedTime;
+              if (plausibleAdvance) {
+                lastAllowedYoutubeTimeRef.current = Math.max(previousTime, observedTime);
               }
             }
 
@@ -440,7 +474,7 @@ export function VideoPlayer({
       player?.destroy();
       if (youtubePlayerRef.current === player) youtubePlayerRef.current = null;
     };
-  }, [courseSessionId, initialCurrentTime, provider, sendHeartbeat, youtubeId]);
+  }, [courseSessionId, initialCurrentTime, initialSeekCeiling, provider, sendHeartbeat, youtubeId]);
 
   useEffect(() => {
     if (provider !== "youtube") return;
@@ -467,7 +501,10 @@ export function VideoPlayer({
             YOUTUBE_SEEK_TOLERANCE_SECONDS
           ) {
             pendingYoutubeSeekRef.current = null;
-            lastAllowedYoutubeTimeRef.current = nextCurrentTime;
+            lastAllowedYoutubeTimeRef.current = Math.max(
+              lastAllowedYoutubeTimeRef.current,
+              nextCurrentTime,
+            );
             setCurrentTime(nextCurrentTime);
             if (pendingSeek.resumePlayback) player.playVideo();
           } else {
@@ -483,12 +520,10 @@ export function VideoPlayer({
               ? elapsedSeconds * youtubePlaybackRateRef.current
               : 0;
           const previousTime = lastAllowedYoutubeTimeRef.current;
-          const jumped =
-            nextCurrentTime >
-              previousTime + allowedAdvance + YOUTUBE_SEEK_TOLERANCE_SECONDS ||
-            nextCurrentTime < previousTime - YOUTUBE_SEEK_TOLERANCE_SECONDS;
+          const jumpedAhead =
+            nextCurrentTime > previousTime + allowedAdvance + YOUTUBE_SEEK_TOLERANCE_SECONDS;
 
-          if (jumped) {
+          if (jumpedAhead) {
             const resumePlayback =
               playerState === YOUTUBE_PLAYER_STATE.PLAYING;
             if (resumePlayback) {
@@ -502,7 +537,7 @@ export function VideoPlayer({
             player.seekTo(previousTime, false);
             setCurrentTime(previousTime);
           } else {
-            lastAllowedYoutubeTimeRef.current = nextCurrentTime;
+            lastAllowedYoutubeTimeRef.current = Math.max(previousTime, nextCurrentTime);
             setCurrentTime(nextCurrentTime);
           }
           lastYoutubeSampleAtRef.current = now;
@@ -546,7 +581,6 @@ export function VideoPlayer({
       if (video.paused) {
         if (video.ended) {
           internalBlobSeekTargetRef.current = 0;
-          lastAllowedBlobTimeRef.current = 0;
           video.currentTime = 0;
         }
 
@@ -569,7 +603,6 @@ export function VideoPlayer({
     } else {
       if (player.getPlayerState() === YOUTUBE_PLAYER_STATE.ENDED) {
         pendingYoutubeSeekRef.current = null;
-        lastAllowedYoutubeTimeRef.current = 0;
         lastYoutubeSampleAtRef.current = performance.now();
         player.seekTo(0, true);
         setCurrentTime(0);
@@ -589,6 +622,36 @@ export function VideoPlayer({
     }
 
     youtubePlayerRef.current?.setPlaybackRate(rate);
+  }
+
+  function seekTo(targetSeconds: number) {
+    if (!playerReady) return;
+
+    if (provider === "blob") {
+      const video = videoRef.current;
+      if (!video) return;
+      const ceiling = Math.min(lastAllowedBlobTimeRef.current, video.duration || Infinity);
+      const clamped = Math.min(Math.max(0, targetSeconds), ceiling);
+      internalBlobSeekTargetRef.current = clamped;
+      video.currentTime = clamped;
+      return;
+    }
+
+    const player = youtubePlayerRef.current;
+    if (!player) return;
+    const clamped = Math.min(
+      Math.max(0, targetSeconds),
+      lastAllowedYoutubeTimeRef.current,
+    );
+    const resumePlayback = player.getPlayerState() === YOUTUBE_PLAYER_STATE.PLAYING;
+    if (resumePlayback) {
+      suppressNextYoutubePauseHeartbeatRef.current = true;
+      player.pauseVideo();
+    }
+    pendingYoutubeSeekRef.current = { target: clamped, resumePlayback };
+    lastYoutubeSampleAtRef.current = performance.now();
+    player.seekTo(clamped, true);
+    setCurrentTime(clamped);
   }
 
   function changeVolume(nextVolume: number) {
@@ -662,7 +725,8 @@ export function VideoPlayer({
 
   function handleBlobLoadedMetadata(video: HTMLVideoElement) {
     const resumeAt = Math.min(Math.max(0, initialCurrentTime), video.duration);
-    lastAllowedBlobTimeRef.current = resumeAt;
+    const seekCeiling = Math.min(Math.max(resumeAt, initialSeekCeiling), video.duration);
+    lastAllowedBlobTimeRef.current = seekCeiling;
     video.volume = volume / 100;
     video.muted = isMuted;
     syncBlobTime(video);
@@ -679,7 +743,10 @@ export function VideoPlayer({
       internalBlobSeekTargetRef.current === null &&
       correctingBlobSeekTargetRef.current === null
     ) {
-      lastAllowedBlobTimeRef.current = video.currentTime;
+      lastAllowedBlobTimeRef.current = Math.max(
+        lastAllowedBlobTimeRef.current,
+        video.currentTime,
+      );
     }
     syncBlobTime(video);
   }
@@ -702,7 +769,7 @@ export function VideoPlayer({
     }
 
     const allowedTime = lastAllowedBlobTimeRef.current;
-    if (Math.abs(video.currentTime - allowedTime) < SEEK_EPSILON_SECONDS) return;
+    if (video.currentTime <= allowedTime + SEEK_EPSILON_SECONDS) return;
 
     correctingBlobSeekTargetRef.current = allowedTime;
     video.currentTime = allowedTime;
@@ -715,7 +782,10 @@ export function VideoPlayer({
       Math.abs(video.currentTime - internalTarget) < SEEK_EPSILON_SECONDS
     ) {
       internalBlobSeekTargetRef.current = null;
-      lastAllowedBlobTimeRef.current = video.currentTime;
+      lastAllowedBlobTimeRef.current = Math.max(
+        lastAllowedBlobTimeRef.current,
+        video.currentTime,
+      );
     }
 
     const correctionTarget = correctingBlobSeekTargetRef.current;
@@ -815,9 +885,11 @@ export function VideoPlayer({
           isMuted={isMuted}
           isPlaying={isPlayingState}
           playbackRate={playbackRate}
+          portalContainer={portalContainer}
           ready={playerReady}
           volume={volume}
           onPlaybackRateChange={changePlaybackRate}
+          onSeek={seekTo}
           onToggleFullscreen={() => void toggleFullscreen()}
           onToggleMute={toggleMute}
           onTogglePlayback={() => void togglePlayback()}
