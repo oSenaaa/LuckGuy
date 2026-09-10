@@ -25,7 +25,7 @@ type Company = {
   archivedAt: Date | null;
 };
 
-type SearchBy = "name" | "cnpj";
+type SearchBy = "name" | "cnpj" | "workplace";
 
 function onlyDigits(value: string) {
   return value.replace(/\D/g, "");
@@ -72,6 +72,10 @@ export function CompanyList({ companies }: { companies: Company[] }) {
     }
 
     const normalizedTerm = normalizeText(term);
+    if (searchBy === "workplace") {
+      return companies.filter((company) => normalizeText(company.workplace ?? "").includes(normalizedTerm));
+    }
+
     return companies.filter((company) => normalizeText(company.name).includes(normalizedTerm));
   }, [companies, query, searchBy]);
 
@@ -87,17 +91,24 @@ export function CompanyList({ companies }: { companies: Company[] }) {
             value={searchBy}
             onChange={(event) => setSearchBy(event.target.value as SearchBy)}
             aria-label="Buscar por"
-            className="w-24 shrink-0"
+            className="w-28 shrink-0"
           >
             <option value="name">Nome</option>
             <option value="cnpj">CNPJ</option>
+            <option value="workplace">Posto</option>
           </NativeSelect>
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={searchBy === "cnpj" ? "Buscar por CNPJ" : "Buscar por nome"}
+              placeholder={
+                searchBy === "cnpj"
+                  ? "Buscar por CNPJ"
+                  : searchBy === "workplace"
+                    ? "Buscar por posto"
+                    : "Buscar por nome"
+              }
               className="w-40 pl-8 sm:w-52"
             />
           </div>
