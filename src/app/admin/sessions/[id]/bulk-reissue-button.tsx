@@ -11,9 +11,11 @@ import { Button } from "@/components/ui/button";
 export function BulkReissueButton({
   participantIds,
   sessionId,
+  label = "Reemitir todos",
 }: {
   participantIds: string[];
   sessionId: string;
+  label?: string;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -53,7 +55,7 @@ export function BulkReissueButton({
       onClick={handleReissueAll}
     >
       {pending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-      Reemitir todos
+      {label}
     </Button>
   );
 }

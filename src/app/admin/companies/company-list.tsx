@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, Search } from "lucide-react";
 
 import { CompanyRowActions } from "./company-row-actions";
+import { normalizeText } from "@/lib/text";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
@@ -28,13 +29,6 @@ type SearchBy = "name" | "cnpj";
 
 function onlyDigits(value: string) {
   return value.replace(/\D/g, "");
-}
-
-function normalizeText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase();
 }
 
 function CompanyRow({ company }: { company: Company }) {

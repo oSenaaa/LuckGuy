@@ -5,8 +5,6 @@ import { and, eq, isNull } from "drizzle-orm";
 import {
   Archive,
   CalendarRange,
-  CheckCircle2,
-  Download,
   ExternalLink,
   FileSpreadsheet,
   Send,
@@ -24,31 +22,14 @@ import {
   viewingProgress,
 } from "@/lib/db/schema";
 import { archiveSession, publishSession } from "../actions";
-import { ReissueCertificateButton } from "./reissue-certificate-button";
-import { BulkReissueButton } from "./bulk-reissue-button";
+import { ParticipantsPanel } from "./participants-panel";
 import { formatWorkload, resolveWorkloadHours } from "@/lib/workload";
 import { archiveExpiredSessions } from "@/lib/sessions";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
 import { CopyButton } from "@/components/copy-button";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function SessionDetailPage({
   params,
@@ -107,8 +88,6 @@ export default async function SessionDetailPage({
       ),
     )
     .where(eq(participants.courseSessionId, id));
-
-  const participantsWithCertificate = participantsList.filter((p) => p.certificateUrl);
 
   const publicPath = `/t/${session.accessSlug}`;
   const requestHeaders = await headers();
@@ -242,84 +221,11 @@ export default async function SessionDetailPage({
       </Card>
 
       <Card>
-        <CardHeader className="border-b">
-          <CardTitle className="flex items-center gap-2">
-            Participantes
-            <Badge variant="secondary">{participantsList.length}</Badge>
-          </CardTitle>
-          {participantsWithCertificate.length > 0 && (
-            <CardAction className="flex items-center gap-2">
-              <BulkReissueButton
-                participantIds={participantsWithCertificate.map((p) => p.id)}
-                sessionId={session.id}
-              />
-              <Button asChild variant="outline" size="sm">
-                <a href={`/api/sessions/${id}/certificates/download`}>
-                  <Download />
-                  Baixar todos (ZIP)
-                </a>
-              </Button>
-            </CardAction>
-          )}
-        </CardHeader>
-        <CardContent className="p-0">
-          {participantsList.length === 0 ? (
-            <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-              Nenhum participante ainda.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead className="text-right">% assistido</TableHead>
-                  <TableHead>Concluído</TableHead>
-                  <TableHead className="text-right">Certificado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {participantsList.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.fullName}</TableCell>
-                    <TableCell className="text-muted-foreground">{p.phone}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {p.watchedPercent ? Number(p.watchedPercent).toFixed(0) : 0}%
-                    </TableCell>
-                    <TableCell>
-                      {p.completedAt ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                          <CheckCircle2 className="size-4" />
-                          Sim
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">Não</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {p.certificateUrl ? (
-                        <div className="flex items-center justify-end gap-1">
-                          <Button asChild variant="ghost" size="sm">
-                            <Link href={p.certificateUrl} target="_blank">
-                              <Download />
-                              Baixar
-                            </Link>
-                          </Button>
-                          <ReissueCertificateButton
-                            participantId={p.id}
-                            sessionId={session.id}
-                          />
-                        </div>
-                      ) : (
-                        <span className="block text-right text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
+        <ParticipantsPanel
+          participants={participantsList}
+          sessionId={session.id}
+          downloadAllHref={`/api/sessions/${id}/certificates/download`}
+        />
       </Card>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { normalizeText } from "@/lib/text";
 
 type Company = { id: string; name: string };
 
@@ -13,9 +14,9 @@ export function CompanyCombobox({ companies }: { companies: Company[] }) {
   const [open, setOpen] = useState(false);
 
   const filtered = useMemo(() => {
-    const term = query.trim().toLowerCase();
+    const term = normalizeText(query.trim());
     if (!term) return companies;
-    return companies.filter((company) => company.name.toLowerCase().includes(term));
+    return companies.filter((company) => normalizeText(company.name).includes(term));
   }, [query, companies]);
 
   useEffect(() => {
