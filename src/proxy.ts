@@ -9,16 +9,10 @@ const isAdminRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   if (!isAdminRoute(req)) return;
 
-  const { orgId } = await auth();
-
-  // Autenticado + org == ADMIN_ORG_ID + papel org:admin. Caso contrário:
-  // páginas -> redirect para /sem-acesso; requisições de API -> 404.
-  await auth.protect(
-    (has) => Boolean(process.env.ADMIN_ORG_ID) &&
-      orgId === process.env.ADMIN_ORG_ID &&
-      has({ role: "org:admin" }),
-    { unauthorizedUrl: new URL("/sem-acesso", req.url).toString() },
-  );
+  // Sem restrição por organização por enquanto (produto single-tenant) — só
+  // exige sessão Clerk válida. Ver src/lib/require-admin.ts para o motivo e
+  // como reativar o controle por organização quando necessário.
+  await auth.protect();
 });
 
 export const config = {

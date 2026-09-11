@@ -20,15 +20,8 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { userId, orgId, has } = await auth();
+  const { userId } = await auth();
   if (!userId) redirect("/sign-in");
-  if (
-    !process.env.ADMIN_ORG_ID ||
-    orgId !== process.env.ADMIN_ORG_ID ||
-    !has({ role: "org:admin" })
-  ) {
-    redirect("/sem-acesso");
-  }
 
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";

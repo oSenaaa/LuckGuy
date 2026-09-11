@@ -1,12 +1,15 @@
 import { auth } from "@clerk/nextjs/server";
 
 /**
- * Acesso administrativo exige:
- *  - sessão Clerk válida (`userId`),
- *  - organização ativa igual a `ADMIN_ORG_ID` (a org da LÍDER Saúde), e
- *  - papel `org:admin` nessa organização.
+ * Acesso administrativo exige apenas sessão Clerk válida (`userId`) — toda conta
+ * autenticada é tratada como admin. O produto é single-tenant (uso exclusivo da
+ * equipe LÍDER, sem múltiplos clientes com o próprio painel), então não há
+ * restrição por organização por enquanto.
  *
- * Falha fechada: se `ADMIN_ORG_ID` não estiver configurado, ninguém é admin.
+ * Para reativar o controle por organização (`ADMIN_ORG_ID` + papel `org:admin`)
+ * quando for necessário separar por cliente, ver a implementação de referência
+ * no commit 3708ad3 do histórico do git.
+ *
  * O `proxy.ts` faz a mesma verificação como defesa em profundidade, mas cada
  * Server Action / Route Handler que muda dados DEVE chamar `requireAdmin()`
  * porque o proxy pode ser contornado por refator de rota (ver docs do Next
@@ -19,19 +22,10 @@ export class AdminAuthError extends Error {
   }
 }
 
-export const ADMIN_ORG_ID = process.env.ADMIN_ORG_ID;
-
 export async function requireAdmin() {
-  const { userId, orgId, has } = await auth();
+  const { userId } = await auth();
 
   if (!userId) throw new AdminAuthError("Não autenticado");
-  if (!ADMIN_ORG_ID) {
-    throw new AdminAuthError(
-      "ADMIN_ORG_ID não configurado — acesso administrativo bloqueado.",
-    );
-  }
-  if (orgId !== ADMIN_ORG_ID) throw new AdminAuthError("Organização não autorizada");
-  if (!has({ role: "org:admin" })) throw new AdminAuthError("Papel insuficiente");
 
-  return { userId, orgId };
+  return { userId };
 }
