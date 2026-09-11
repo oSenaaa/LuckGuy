@@ -47,6 +47,7 @@ export default async function SessionDetailPage({
       name: courseSessions.name,
       status: courseSessions.status,
       accessSlug: courseSessions.accessSlug,
+      accessPin: courseSessions.accessPin,
       workloadHours: courseSessions.workloadHours,
       minWatchPercent: courseSessions.minWatchPercent,
       courseId: courses.id,
@@ -159,23 +160,37 @@ export default async function SessionDetailPage({
           <CardTitle>Link de acesso</CardTitle>
           <CardDescription>Compartilhe com os participantes desta turma.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap items-center gap-2">
-          <code className="max-w-full break-all rounded-md bg-muted px-2.5 py-1.5 text-xs">
-            {publicUrl}
-          </code>
-          <CopyButton value={publicUrl} label="Copiar link" />
-          <Button asChild variant="outline" size="sm">
-            <a href={publicUrl} target="_blank" rel="noreferrer">
-              <ExternalLink />
-              Abrir
-            </a>
-          </Button>
-          <Button asChild variant="ghost" size="sm">
-            <a href={`/api/sessions/${id}/export`}>
-              <FileSpreadsheet />
-              Exportar CSV
-            </a>
-          </Button>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <code className="max-w-full break-all rounded-md bg-muted px-2.5 py-1.5 text-xs">
+              {publicUrl}
+            </code>
+            <CopyButton value={publicUrl} label="Copiar link" />
+            <Button asChild variant="outline" size="sm">
+              <a href={publicUrl} target="_blank" rel="noreferrer">
+                <ExternalLink />
+                Abrir
+              </a>
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <a href={`/api/sessions/${id}/export`}>
+                <FileSpreadsheet />
+                Exportar CSV
+              </a>
+            </Button>
+          </div>
+          {session.accessPin && (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Código da turma:</span>
+              <code className="rounded-md bg-muted px-2.5 py-1.5 font-mono text-xs tracking-widest">
+                {session.accessPin}
+              </code>
+              <CopyButton value={session.accessPin} label="Copiar código" />
+              <span className="text-xs text-muted-foreground">
+                Envie junto com o link — é exigido na identificação.
+              </span>
+            </div>
+          )}
         </CardContent>
       </Card>
 

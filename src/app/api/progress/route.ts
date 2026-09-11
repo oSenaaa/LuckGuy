@@ -3,6 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { courses, courseSessions, viewingProgress } from "@/lib/db/schema";
 import { getParticipantId } from "@/lib/participant-session";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 const HEARTBEAT_INTERVAL_SECONDS = 10;
 const MAX_PLAYBACK_RATE = 2;
@@ -46,9 +47,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const limited = await rateLimit("progress", clientIp(request.headers), {
+    limit: 30,
+    windowSeconds: 60,
+  });
+  if (!limited.success) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfter) } },
+    );
+  }
+
   const db = getDb();
   const [session] = await db
     .select({
+      status: courseSessions.status,
+      startsAt: courseSessions.startsAt,
+      endsAt: courseSessions.endsAt,
       minWatchPercent: courseSessions.minWatchPercent,
       videoDurationSeconds: courses.videoDurationSeconds,
     })
@@ -59,6 +74,17 @@ export async function POST(request: NextRequest) {
 
   if (!session || !session.videoDurationSeconds) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  // A turma precisa estar publicada e dentro da janela (as páginas RSC já
+  // checam; a rota não checava e o cookie vale 30 dias).
+  const nowDate = new Date();
+  if (
+    session.status !== "published" ||
+    (session.startsAt && session.startsAt > nowDate) ||
+    (session.endsAt && session.endsAt < nowDate)
+  ) {
+    return NextResponse.json({ error: "Session unavailable" }, { status: 403 });
   }
 
   const [existing] = await db

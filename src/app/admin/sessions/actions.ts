@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { courses, courseSessions } from "@/lib/db/schema";
-import { generateAccessSlug } from "@/lib/access-slug";
+import { generateAccessSlug, generateAccessPin } from "@/lib/access-slug";
 import { CertificateError, issueCertificate } from "@/lib/certificate/issue";
 import { requireAdmin } from "@/lib/require-admin";
 
@@ -14,7 +14,7 @@ function parseBrasiliaDateTime(value: string) {
 }
 
 export async function createSession(formData: FormData) {
-  const userId = await requireAdmin();
+  const { userId } = await requireAdmin();
   const courseId = String(formData.get("courseId") ?? "");
   const companyId = String(formData.get("companyId") ?? "");
   const name = String(formData.get("name") ?? "").trim();
@@ -43,6 +43,7 @@ export async function createSession(formData: FormData) {
       name,
       workloadHours: workloadHours.toFixed(2),
       accessSlug: generateAccessSlug(),
+      accessPin: generateAccessPin(),
       startsAt: parseBrasiliaDateTime(startsAtRaw),
       endsAt: parseBrasiliaDateTime(endsAtRaw),
       createdByClerkUserId: userId,

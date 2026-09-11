@@ -15,7 +15,13 @@ import { SubmitButton } from "@/components/ui/submit-button";
 
 const initialState: IdentifyParticipantState = { error: null };
 
-export function IdentifyForm({ accessSlug }: { accessSlug: string }) {
+export function IdentifyForm({
+  accessSlug,
+  requiresPin = false,
+}: {
+  accessSlug: string;
+  requiresPin?: boolean;
+}) {
   const identifyForSession = identifyParticipant.bind(null, accessSlug);
   const [state, formAction] = useActionState(identifyForSession, initialState);
 
@@ -44,6 +50,21 @@ export function IdentifyForm({ accessSlug }: { accessSlug: string }) {
           autoComplete="tel"
         />
       </div>
+      {requiresPin && (
+        <div className="grid gap-2">
+          <Label htmlFor="accessPin">Código da turma</Label>
+          <DigitsInput
+            id="accessPin"
+            name="accessPin"
+            required
+            maxDigits={6}
+            pattern="\d{4,6}"
+            title="Código numérico informado pela empresa"
+            placeholder="Código informado pela empresa"
+            autoComplete="one-time-code"
+          />
+        </div>
+      )}
       {state.error && (
         <Alert variant="destructive">
           <AlertCircle />

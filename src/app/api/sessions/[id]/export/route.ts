@@ -1,18 +1,39 @@
 import { NextResponse } from "next/server";
 import { and, eq, isNull } from "drizzle-orm";
-import { auth } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/db";
 import { certificates, participants, viewingProgress } from "@/lib/db/schema";
+import { AdminAuthError, requireAdmin } from "@/lib/require-admin";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 function csvEscape(value: string) {
-  if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
-  return value;
+  // Neutraliza formula/CSV injection: uma célula que começa com =, +, -, @, tab ou CR
+  // é interpretada como fórmula pelo Excel/Sheets. Prefixa com apóstrofo.
+  let safe = value;
+  if (/^[=+\-@\t\r]/.test(safe)) safe = `'${safe}`;
+  if (/[",\n\r]/.test(safe)) return `"${safe.replace(/"/g, '""')}"`;
+  return safe;
 }
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  let adminId: string;
+  try {
+    ({ userId: adminId } = await requireAdmin());
+  } catch (err) {
+    if (err instanceof AdminAuthError) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    throw err;
+  }
+
+  const limited = await rateLimit("csv-export", `${adminId}:${clientIp(request.headers)}`, {
+    limit: 20,
+    windowSeconds: 3600,
+  });
+  if (!limited.success) {
+    return NextResponse.json(
+      { error: "Muitas exportações. Tente novamente mais tarde." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfter) } },
+    );
   }
 
   const { id } = await params;

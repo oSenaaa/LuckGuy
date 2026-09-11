@@ -31,6 +31,7 @@ export default async function IdentifyPage({
       courseName: courses.name,
       workloadHours: courseSessions.workloadHours,
       defaultDurationMinutes: courses.defaultDurationMinutes,
+      accessPin: courseSessions.accessPin,
       startsAt: courseSessions.startsAt,
       endsAt: courseSessions.endsAt,
     })
@@ -101,7 +102,7 @@ export default async function IdentifyPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <IdentifyForm accessSlug={slug} />
+          <IdentifyForm accessSlug={slug} requiresPin={Boolean(session.accessPin)} />
         </CardContent>
       </Card>
     </div>

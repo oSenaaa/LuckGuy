@@ -1,5 +1,4 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
@@ -14,15 +13,20 @@ import {
   isSignatureUploadPath,
   isTemplateUploadPath,
 } from "@/lib/upload-rules";
+import { AdminAuthError, requireAdmin } from "@/lib/require-admin";
 
 const TEN_MINUTES_IN_MS = 10 * 60 * 1000;
 const ONE_HOUR_IN_MS = 60 * 60 * 1000;
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    try {
+      await requireAdmin();
+    } catch (err) {
+      if (err instanceof AdminAuthError) {
+        return NextResponse.json({ error: "Não autorizado." }, { status: 403 });
+      }
+      throw err;
     }
 
     const body = (await request.json()) as HandleUploadBody;

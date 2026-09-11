@@ -31,8 +31,13 @@ function parseDefaultDurationMinutes(formData: FormData): number | null {
     return Math.round(value);
   }
 
+  if (value < 0.5 || value > 999) {
+    throw new Error("Duração em horas deve ser entre 0,5 e 999");
+  }
   return Math.round(value * 60);
 }
+
+const YOUTUBE_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 
 export async function createCourse(formData: FormData) {
   await requireAdmin();
@@ -155,9 +160,25 @@ export async function setCourseVideo(courseId: string, videoBlobUrl: string, vid
   return { ok: true as const };
 }
 
-export async function setCourseVideoYoutube(courseId: string, videoYoutubeId: string, videoDurationSeconds: number) {
+export async function setCourseVideoYoutube(
+  courseId: string,
+  videoYoutubeId: string,
+  videoDurationSeconds: number,
+) {
   await requireAdmin();
-  await getDb()
+
+  if (!YOUTUBE_ID_PATTERN.test(videoYoutubeId)) {
+    throw new Error("ID de vídeo do YouTube inválido.");
+  }
+  if (
+    !Number.isInteger(videoDurationSeconds) ||
+    videoDurationSeconds <= 0 ||
+    videoDurationSeconds > VIDEO_MAX_DURATION_SECONDS
+  ) {
+    throw new Error("A duração do vídeo é inválida.");
+  }
+
+  const updated = await getDb()
     .update(courses)
     .set({
       videoProvider: "youtube",
@@ -166,6 +187,9 @@ export async function setCourseVideoYoutube(courseId: string, videoYoutubeId: st
       videoDurationSeconds,
       updatedAt: new Date(),
     })
-    .where(eq(courses.id, courseId));
+    .where(eq(courses.id, courseId))
+    .returning({ id: courses.id });
+  if (updated.length === 0) throw new Error("Treinamento não encontrado.");
+
   revalidatePath(`/admin/courses/${courseId}`);
 }

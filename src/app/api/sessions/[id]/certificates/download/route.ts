@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { and, eq, isNull } from "drizzle-orm";
-import { auth } from "@clerk/nextjs/server";
 import JSZip from "jszip";
 import { getDb } from "@/lib/db";
 import { certificates, participants } from "@/lib/db/schema";
+import { AdminAuthError, requireAdmin } from "@/lib/require-admin";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 function sanitizeFilename(name: string) {
   const clean = name
@@ -14,10 +15,26 @@ function sanitizeFilename(name: string) {
   return clean || "certificado";
 }
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  let adminId: string;
+  try {
+    ({ userId: adminId } = await requireAdmin());
+  } catch (err) {
+    if (err instanceof AdminAuthError) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    throw err;
+  }
+
+  const limited = await rateLimit("cert-zip", `${adminId}:${clientIp(request.headers)}`, {
+    limit: 20,
+    windowSeconds: 3600,
+  });
+  if (!limited.success) {
+    return NextResponse.json(
+      { error: "Muitos downloads. Tente novamente mais tarde." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfter) } },
+    );
   }
 
   const { id } = await params;
