@@ -1,8 +1,11 @@
+import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
 import { CheckCircle2, FileText, XCircle } from "lucide-react";
 
 import { getDb } from "@/lib/db";
 import { certificates, certificateSignatures, viewingProgress } from "@/lib/db/schema";
+import { verifyCertificate } from "@/lib/certificate/signature";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { formatWorkload } from "@/lib/workload";
 import { StatusCard } from "@/components/status-card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +29,23 @@ export default async function VerifyCertificatePage({
 }) {
   const { codigo } = await params;
 
+  const limited = await rateLimit("verify", clientIp(await headers()), {
+    limit: 60,
+    windowSeconds: 60,
+  });
+  if (!limited.success) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center p-6">
+        <StatusCard
+          icon={XCircle}
+          tone="destructive"
+          title="Muitas consultas"
+          description={`Aguarde ${limited.retryAfter}s e tente novamente.`}
+        />
+      </div>
+    );
+  }
+
   const db = getDb();
   const [certificate] = await db
     .select({
@@ -35,6 +55,7 @@ export default async function VerifyCertificatePage({
       issuedAt: certificates.issuedAt,
       verificationCode: certificates.verificationCode,
       pdfBlobUrl: certificates.pdfBlobUrl,
+      contentHmac: certificates.contentHmac,
       revokedAt: certificates.revokedAt,
       revokedReason: certificates.revokedReason,
       instructorName: certificateSignatures.coordinatorName,
@@ -59,7 +80,18 @@ export default async function VerifyCertificatePage({
     );
   }
 
-  const isValid = !certificate.revokedAt;
+  const integrity = verifyCertificate(
+    {
+      verificationCode: certificate.verificationCode,
+      participantName: certificate.participantNameSnapshot,
+      courseName: certificate.courseNameSnapshot,
+      workloadHours: certificate.workloadHoursSnapshot,
+      issuedAt: certificate.issuedAt,
+    },
+    certificate.contentHmac,
+  );
+
+  const isValid = !certificate.revokedAt && integrity !== "tampered";
   const rows = [
     { label: "Nome", value: certificate.participantNameSnapshot },
     { label: "Treinamento", value: certificate.courseNameSnapshot },
@@ -92,7 +124,11 @@ export default async function VerifyCertificatePage({
             )}
           </span>
           <CardTitle className="text-lg">
-            {isValid ? "Certificado válido" : "Certificado revogado"}
+            {integrity === "tampered"
+              ? "Certificado adulterado"
+              : isValid
+                ? "Certificado válido"
+                : "Certificado revogado"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -127,6 +163,18 @@ export default async function VerifyCertificatePage({
           {!isValid && certificate.revokedReason && (
             <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
               Motivo: {certificate.revokedReason}
+            </p>
+          )}
+
+          {integrity === "tampered" && (
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              Os dados deste certificado não conferem com a assinatura de integridade
+              registrada na emissão. Não aceite este documento.
+            </p>
+          )}
+          {integrity === "valid" && (
+            <p className="text-center text-xs text-muted-foreground">
+              Integridade do conteúdo conferida.
             </p>
           )}
 

@@ -12,12 +12,25 @@ import {
 } from "@/lib/db/schema";
 import { generateCertificatePdf, DEFAULT_TEXT_POSITIONS, TextPositions } from "./generate-pdf";
 import { generateVerificationCode } from "./verification-code";
+import { signCertificate } from "./signature";
 import { resolveWorkloadHours } from "@/lib/workload";
 import { getVerificationUrl } from "@/lib/site-url";
 
 export class CertificateError extends Error {}
 
 async function fetchImageBytes(url: string) {
+  // Só imagens do Blob store configurado — evita SSRF a partir de uma URL
+  // arbitrária persistida nas colunas de template/assinatura.
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new CertificateError("URL de imagem do certificado inválida");
+  }
+  if (parsed.protocol !== "https:" || !parsed.hostname.endsWith(".blob.vercel-storage.com")) {
+    throw new CertificateError("Imagem do certificado fora do armazenamento configurado");
+  }
+
   const res = await fetch(url);
   if (!res.ok) throw new CertificateError(`Não foi possível carregar a imagem do certificado (${url})`);
   return new Uint8Array(await res.arrayBuffer());
@@ -59,21 +72,73 @@ export async function issueCertificate(participantId: string, { reissue = false 
     .limit(1);
   if (!session) throw new CertificateError("Turma não encontrada");
 
+  // Emissão iniciada pelo participante: revalida o estado da turma (as páginas
+  // RSC já checam, mas a rota /api/certificates/issue não). Reemissão é
+  // acionada só pelo admin e pode ocorrer com a turma já arquivada.
+  if (!reissue) {
+    if (session.status !== "published") {
+      throw new CertificateError("Esta turma não está disponível para emissão");
+    }
+    const now = new Date();
+    if (session.startsAt && session.startsAt > now) {
+      throw new CertificateError("Esta turma ainda não começou");
+    }
+    if (session.endsAt && session.endsAt < now) {
+      throw new CertificateError("O prazo desta turma encerrou");
+    }
+  }
+
   const [course] = await db.select().from(courses).where(eq(courses.id, session.courseId)).limit(1);
   if (!course) throw new CertificateError("Curso não encontrado");
 
   const [template] = session.certificateTemplateId
-    ? await db.select().from(certificateTemplates).where(eq(certificateTemplates.id, session.certificateTemplateId)).limit(1)
-    : await db.select().from(certificateTemplates).where(eq(certificateTemplates.isDefault, true)).limit(1);
-  if (!template) throw new CertificateError("Nenhum modelo de certificado configurado");
-
-  const [signature] = course.coordinatorSignatureId
     ? await db
         .select()
-        .from(certificateSignatures)
-        .where(eq(certificateSignatures.id, course.coordinatorSignatureId))
+        .from(certificateTemplates)
+        .where(
+          and(
+            eq(certificateTemplates.id, session.certificateTemplateId),
+            isNull(certificateTemplates.archivedAt),
+          ),
+        )
         .limit(1)
-    : await db.select().from(certificateSignatures).where(eq(certificateSignatures.isDefault, true)).limit(1);
+    : await db
+        .select()
+        .from(certificateTemplates)
+        .where(and(eq(certificateTemplates.isDefault, true), isNull(certificateTemplates.archivedAt)))
+        .limit(1);
+  if (!template) {
+    throw new CertificateError(
+      session.certificateTemplateId
+        ? "O modelo de certificado da turma foi arquivado ou removido"
+        : "Nenhum modelo de certificado configurado",
+    );
+  }
+
+  let signature:
+    | typeof certificateSignatures.$inferSelect
+    | undefined;
+  if (course.coordinatorSignatureId) {
+    [signature] = await db
+      .select()
+      .from(certificateSignatures)
+      .where(
+        and(
+          eq(certificateSignatures.id, course.coordinatorSignatureId),
+          isNull(certificateSignatures.archivedAt),
+        ),
+      )
+      .limit(1);
+    if (!signature) {
+      throw new CertificateError("A assinatura do coordenador foi arquivada ou removida");
+    }
+  } else {
+    [signature] = await db
+      .select()
+      .from(certificateSignatures)
+      .where(and(eq(certificateSignatures.isDefault, true), isNull(certificateSignatures.archivedAt)))
+      .limit(1);
+  }
 
   const [backgroundImageBytes, signatureImageBytes] = await Promise.all([
     fetchImageBytes(template.backgroundImageBlobUrl),
@@ -82,8 +147,17 @@ export async function issueCertificate(participantId: string, { reissue = false 
 
   const issuedAt = new Date();
   const workloadHours = resolveWorkloadHours(course.defaultDurationMinutes, Number(session.workloadHours));
+  const workloadHoursSnapshot = workloadHours.toFixed(2);
   const positions = (template.textPositions as TextPositions | null) ?? DEFAULT_TEXT_POSITIONS;
   const verificationCode = existingCert?.verificationCode ?? generateVerificationCode();
+
+  const contentHmac = signCertificate({
+    verificationCode,
+    participantName: participant.fullName,
+    courseName: course.name,
+    workloadHours: workloadHoursSnapshot,
+    issuedAt,
+  });
 
   const pdfBytes = await generateCertificatePdf({
     data: {
@@ -93,6 +167,7 @@ export async function issueCertificate(participantId: string, { reissue = false 
       issuedAt,
       verificationCode,
       verificationUrl: getVerificationUrl(verificationCode),
+      integrityTag: contentHmac.slice(0, 12),
     },
     backgroundImageBytes,
     signatureImageBytes,
@@ -113,7 +188,8 @@ export async function issueCertificate(participantId: string, { reissue = false 
     issuedAt,
     participantNameSnapshot: participant.fullName,
     courseNameSnapshot: course.name,
-    workloadHoursSnapshot: workloadHours.toFixed(2),
+    workloadHoursSnapshot,
+    contentHmac,
     templateIdUsed: template.id,
     signatureIdUsed: signature?.id,
   };

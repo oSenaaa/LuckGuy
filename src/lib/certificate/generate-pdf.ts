@@ -8,6 +8,8 @@ export type CertificateData = {
   issuedAt: Date;
   verificationCode: string;
   verificationUrl: string;
+  /** Prefixo curto do HMAC de integridade, impresso junto do código. */
+  integrityTag?: string;
 };
 
 export type RGB = [number, number, number];
@@ -175,7 +177,9 @@ export async function generateCertificatePdf({
   drawCentered(page, `Emitido em ${formatDate(data.issuedAt)}`, positions.issuedAt, regularFont);
   const codeBounds = drawCentered(
     page,
-    `Código de validação: ${data.verificationCode}`,
+    data.integrityTag
+      ? `Código de validação: ${data.verificationCode} · ${data.integrityTag}`
+      : `Código de validação: ${data.verificationCode}`,
     positions.verificationCode,
     regularFont,
   );
