@@ -1,4 +1,4 @@
-import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, PDFFont, PDFName, PDFPage, PDFString, StandardFonts, rgb } from "pdf-lib";
 import { formatWorkload } from "@/lib/workload";
 
 export type CertificateData = {
@@ -7,6 +7,7 @@ export type CertificateData = {
   workloadHours: number;
   issuedAt: Date;
   verificationCode: string;
+  verificationUrl: string;
 };
 
 export type RGB = [number, number, number];
@@ -63,7 +64,7 @@ function drawCentered(
   text: string,
   pos: TextPosition,
   font: PDFFont,
-) {
+): { x: number; y: number; width: number; height: number } {
   let size = pos.size ?? 14;
   let width = font.widthOfTextAtSize(text, size);
 
@@ -91,13 +92,44 @@ function drawCentered(
   }
 
   const [r, g, b] = pos.color ?? [0.1, 0.1, 0.1];
+  const x = pos.x - width / 2;
   page.drawText(text, {
-    x: pos.x - width / 2,
+    x,
     y: pos.y,
     size,
     font,
     color: rgb(r, g, b),
   });
+
+  return { x, y: pos.y, width, height: size };
+}
+
+/** Overlays an invisible clickable region so the verification code opens `url` in a PDF viewer. */
+function addLinkAnnotation(
+  pdfDoc: PDFDocument,
+  page: PDFPage,
+  { x, y, width, height, url }: { x: number; y: number; width: number; height: number; url: string },
+) {
+  const linkAnnotation = pdfDoc.context.register(
+    pdfDoc.context.obj({
+      Type: "Annot",
+      Subtype: "Link",
+      Rect: [x, y, x + width, y + height],
+      Border: [0, 0, 0],
+      A: {
+        Type: "Action",
+        S: "URI",
+        URI: PDFString.of(url),
+      },
+    }),
+  );
+
+  const existingAnnots = page.node.Annots();
+  if (existingAnnots) {
+    existingAnnots.push(linkAnnotation);
+  } else {
+    page.node.set(PDFName.of("Annots"), pdfDoc.context.obj([linkAnnotation]));
+  }
 }
 
 function formatDate(date: Date) {
@@ -141,7 +173,20 @@ export async function generateCertificatePdf({
   drawCentered(page, data.courseName, positions.courseName, boldFont);
   drawCentered(page, formatWorkload(data.workloadHours), positions.workloadHours, regularFont);
   drawCentered(page, `Emitido em ${formatDate(data.issuedAt)}`, positions.issuedAt, regularFont);
-  drawCentered(page, `Código de validação: ${data.verificationCode}`, positions.verificationCode, regularFont);
+  const codeBounds = drawCentered(
+    page,
+    `Código de validação: ${data.verificationCode}`,
+    positions.verificationCode,
+    regularFont,
+  );
+  const linkPadding = 4;
+  addLinkAnnotation(pdfDoc, page, {
+    x: codeBounds.x - linkPadding,
+    y: codeBounds.y - linkPadding,
+    width: codeBounds.width + linkPadding * 2,
+    height: codeBounds.height + linkPadding * 2,
+    url: data.verificationUrl,
+  });
 
   if (signatureImageBytes) {
     const sigImage = await embedImageAnyFormat(pdfDoc, signatureImageBytes);

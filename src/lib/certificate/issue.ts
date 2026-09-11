@@ -13,6 +13,7 @@ import {
 import { generateCertificatePdf, DEFAULT_TEXT_POSITIONS, TextPositions } from "./generate-pdf";
 import { generateVerificationCode } from "./verification-code";
 import { resolveWorkloadHours } from "@/lib/workload";
+import { getVerificationUrl } from "@/lib/site-url";
 
 export class CertificateError extends Error {}
 
@@ -91,6 +92,7 @@ export async function issueCertificate(participantId: string, { reissue = false 
       workloadHours,
       issuedAt,
       verificationCode,
+      verificationUrl: getVerificationUrl(verificationCode),
     },
     backgroundImageBytes,
     signatureImageBytes,
