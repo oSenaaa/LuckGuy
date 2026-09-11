@@ -26,7 +26,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DigitsInput } from "@/components/ui/digits-input";
+import { DocumentInput } from "@/components/ui/document-input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -158,14 +159,12 @@ export function CompanyRowActions({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor={`edit-cnpj-${id}`}>CNPJ</Label>
-              <DigitsInput
+              <Label htmlFor={`edit-cnpj-${id}`}>CNPJ ou CPF</Label>
+              <DocumentInput
                 id={`edit-cnpj-${id}`}
                 name="cnpj"
                 required
-                maxDigits={14}
-                pattern="\d{14}"
-                title="Digite os 14 dígitos do CNPJ, sem pontuação"
+                title="Digite o CPF (11 dígitos) ou CNPJ (14 dígitos)"
                 defaultValue={cnpj ?? ""}
                 disabled={editPending}
               />
@@ -191,16 +190,8 @@ export function CompanyRowActions({
               />
             </div>
             <div className="grid gap-2 sm:col-span-2">
-              <Label htmlFor={`edit-phone-${id}`}>Telefone de contato</Label>
-              <DigitsInput
-                id={`edit-phone-${id}`}
-                name="contactPhone"
-                maxDigits={11}
-                pattern="\d{10,11}"
-                title="Digite o telefone com DDD (10 ou 11 dígitos), sem pontuação"
-                defaultValue={contactPhone ?? ""}
-                disabled={editPending}
-              />
+              <Label htmlFor={`edit-${id}-phone`}>Telefone de contato</Label>
+              <PhoneInput idPrefix={`edit-${id}`} defaultValue={contactPhone} disabled={editPending} />
             </div>
             {editError && (
               <p role="alert" className="text-sm text-destructive sm:col-span-2">

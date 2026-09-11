@@ -1,29 +1,16 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
-import {
-  ArrowUpRight,
-  Building2,
-  CalendarClock,
-  GraduationCap,
-  LayoutDashboard,
-  Plus,
-} from "lucide-react";
+import { Building2, GraduationCap, LayoutDashboard, Plus } from "lucide-react";
 
 import { getDb } from "@/lib/db";
 import { companies, courseSessions, courses } from "@/lib/db/schema";
-import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/page-header";
-import { SessionStatusBadge } from "@/components/admin/session-status-badge";
+import { SessionsTable } from "@/components/admin/sessions-table";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 
 export default async function AdminDashboard() {
-  const recentSessions = await getDb()
+  const sessions = await getDb()
     .select({
       id: courseSessions.id,
       name: courseSessions.name,
@@ -34,8 +21,7 @@ export default async function AdminDashboard() {
     .from(courseSessions)
     .innerJoin(courses, eq(courses.id, courseSessions.courseId))
     .innerJoin(companies, eq(companies.id, courseSessions.companyId))
-    .orderBy(desc(courseSessions.createdAt))
-    .limit(5);
+    .orderBy(desc(courseSessions.createdAt));
 
   const shortcuts = [
     { label: "Nova turma", href: "/admin/sessions/new", icon: Plus, primary: true },
@@ -68,59 +54,7 @@ export default async function AdminDashboard() {
       </div>
 
       <Card>
-        <CardHeader className="border-b">
-          <CardTitle className="flex items-center gap-2">
-            <CalendarClock className="size-4 text-muted-foreground" />
-            Turmas recentes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {recentSessions.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Nenhuma turma ainda.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {recentSessions.map((session) => {
-                const isArchived = session.status === "archived";
-                return (
-                  <li key={session.id} className={cn(isArchived && "opacity-60")}>
-                    <Link
-                      href={`/admin/sessions/${session.id}`}
-                      className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
-                    >
-                      <span
-                        className={cn(
-                          "size-2 shrink-0 rounded-full",
-                          session.status === "published" && "bg-emerald-500",
-                          session.status === "draft" && "bg-amber-400",
-                          isArchived && "bg-muted-foreground/40",
-                        )}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={cn(
-                            "truncate font-medium",
-                            isArchived && "text-muted-foreground",
-                          )}
-                        >
-                          {session.name}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {session.courseName} · {session.companyName}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <SessionStatusBadge status={session.status} />
-                        <ArrowUpRight className="size-4 text-muted-foreground" />
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </CardContent>
+        <SessionsTable sessions={sessions} />
       </Card>
     </div>
   );

@@ -8,7 +8,8 @@ import { CompanyList } from "./company-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Input } from "@/components/ui/input";
-import { DigitsInput } from "@/components/ui/digits-input";
+import { DocumentInput } from "@/components/ui/document-input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -36,7 +37,7 @@ export default async function CompaniesPage() {
         <CardHeader className="border-b">
           <CardTitle>Nova empresa</CardTitle>
           <CardDescription>
-            Nome, CNPJ (14 dígitos) e posto de trabalho são obrigatórios. Os demais campos são opcionais.
+            Nome, CNPJ/CPF e posto de trabalho são obrigatórios. Os demais campos são opcionais.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -46,15 +47,13 @@ export default async function CompaniesPage() {
               <Input id="name" name="name" required placeholder="Ex: Construtora Alfa Ltda" />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="cnpj">CNPJ</Label>
-              <DigitsInput
+              <Label htmlFor="cnpj">CNPJ ou CPF</Label>
+              <DocumentInput
                 id="cnpj"
                 name="cnpj"
                 required
-                maxDigits={14}
-                pattern="\d{14}"
-                title="Digite os 14 dígitos do CNPJ, sem pontuação"
-                placeholder="Somente números (14 dígitos)"
+                title="Digite o CPF (11 dígitos) ou CNPJ (14 dígitos)"
+                placeholder="Somente números"
               />
             </div>
             <div className="grid gap-2">
@@ -70,16 +69,9 @@ export default async function CompaniesPage() {
               <Label htmlFor="contactEmail">E-mail de contato</Label>
               <Input id="contactEmail" name="contactEmail" type="email" placeholder="contato@empresa.com" />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="contactPhone">Telefone de contato</Label>
-              <DigitsInput
-                id="contactPhone"
-                name="contactPhone"
-                maxDigits={11}
-                pattern="\d{10,11}"
-                title="Digite o telefone com DDD (10 ou 11 dígitos), sem pontuação"
-                placeholder="Somente números, com DDD"
-              />
+            <div className="grid gap-2 sm:col-span-2">
+              <Label htmlFor="create-phone">Telefone de contato</Label>
+              <PhoneInput idPrefix="create" />
             </div>
             <div className="sm:col-span-2">
               <SubmitButton pendingText="Adicionando…">Adicionar empresa</SubmitButton>

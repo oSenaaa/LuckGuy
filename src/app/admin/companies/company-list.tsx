@@ -6,8 +6,8 @@ import { ArrowUpRight, Search } from "lucide-react";
 
 import { CompanyRowActions } from "./company-row-actions";
 import { normalizeText } from "@/lib/text";
+import { onlyDigits } from "@/lib/document";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
 import {
   CardAction,
   CardContent,
@@ -24,12 +24,6 @@ type Company = {
   contactPhone: string | null;
   archivedAt: Date | null;
 };
-
-type SearchBy = "name" | "cnpj" | "workplace";
-
-function onlyDigits(value: string) {
-  return value.replace(/\D/g, "");
-}
 
 function CompanyRow({ company }: { company: Company }) {
   return (
@@ -59,25 +53,21 @@ function CompanyRow({ company }: { company: Company }) {
 
 export function CompanyList({ companies }: { companies: Company[] }) {
   const [query, setQuery] = useState("");
-  const [searchBy, setSearchBy] = useState<SearchBy>("name");
 
   const filtered = useMemo(() => {
-    const term = query.trim().toLowerCase();
+    const term = query.trim();
     if (!term) return companies;
 
-    if (searchBy === "cnpj") {
-      const digits = onlyDigits(term);
-      if (!digits) return companies;
-      return companies.filter((company) => onlyDigits(company.cnpj ?? "").includes(digits));
-    }
-
     const normalizedTerm = normalizeText(term);
-    if (searchBy === "workplace") {
-      return companies.filter((company) => normalizeText(company.workplace ?? "").includes(normalizedTerm));
-    }
+    const digitsTerm = onlyDigits(term);
 
-    return companies.filter((company) => normalizeText(company.name).includes(normalizedTerm));
-  }, [companies, query, searchBy]);
+    return companies.filter((company) => {
+      if (normalizeText(company.name).includes(normalizedTerm)) return true;
+      if (normalizeText(company.workplace ?? "").includes(normalizedTerm)) return true;
+      if (digitsTerm && onlyDigits(company.cnpj ?? "").includes(digitsTerm)) return true;
+      return false;
+    });
+  }, [companies, query]);
 
   const active = filtered.filter((company) => !company.archivedAt);
   const archived = filtered.filter((company) => company.archivedAt);
@@ -87,29 +77,13 @@ export function CompanyList({ companies }: { companies: Company[] }) {
       <CardHeader className="border-b">
         <CardTitle>Empresas cadastradas</CardTitle>
         <CardAction className="flex items-center gap-2">
-          <NativeSelect
-            value={searchBy}
-            onChange={(event) => setSearchBy(event.target.value as SearchBy)}
-            aria-label="Buscar por"
-            className="w-28 shrink-0"
-          >
-            <option value="name">Nome</option>
-            <option value="cnpj">CNPJ</option>
-            <option value="workplace">Posto</option>
-          </NativeSelect>
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={
-                searchBy === "cnpj"
-                  ? "Buscar por CNPJ"
-                  : searchBy === "workplace"
-                    ? "Buscar por posto"
-                    : "Buscar por nome"
-              }
-              className="w-40 pl-8 sm:w-52"
+              placeholder="Buscar por nome, CNPJ/CPF ou posto"
+              className="w-48 pl-8 sm:w-64"
             />
           </div>
         </CardAction>

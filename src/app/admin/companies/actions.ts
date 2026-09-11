@@ -5,25 +5,57 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { companies } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/require-admin";
+import { isValidCpfCnpj, onlyDigits } from "@/lib/document";
+import { DEFAULT_PHONE_COUNTRY, buildPhoneValue } from "@/lib/phone";
+
+function readDocument(formData: FormData) {
+  return onlyDigits(String(formData.get("cnpj") ?? ""));
+}
+
+function validateDocument(document: string) {
+  if (document.length !== 11 && document.length !== 14) {
+    return "Documento deve ter 11 (CPF) ou 14 (CNPJ) dígitos";
+  }
+  if (!isValidCpfCnpj(document)) {
+    return document.length === 11 ? "CPF inválido" : "CNPJ inválido";
+  }
+  return null;
+}
+
+function readPhone(formData: FormData) {
+  const country = String(formData.get("contactPhoneCountry") ?? DEFAULT_PHONE_COUNTRY.dial);
+  const national = onlyDigits(String(formData.get("contactPhoneNumber") ?? ""));
+  return { country, national };
+}
+
+function validatePhone(country: string, national: string) {
+  const maxDigits = country === DEFAULT_PHONE_COUNTRY.dial ? 11 : 15;
+  if (national.length > maxDigits) {
+    return `Telefone deve conter no máximo ${maxDigits} dígitos`;
+  }
+  return null;
+}
 
 export async function createCompany(formData: FormData) {
   await requireAdmin();
   const name = String(formData.get("name") ?? "").trim();
-  const cnpj = String(formData.get("cnpj") ?? "").replace(/\D/g, "");
+  const document = readDocument(formData);
   const contactEmail = String(formData.get("contactEmail") ?? "").trim() || null;
-  const contactPhone = String(formData.get("contactPhone") ?? "").replace(/\D/g, "");
+  const { country: phoneCountry, national: phoneNational } = readPhone(formData);
   const workplace = String(formData.get("workplace") ?? "").trim();
 
   if (!name) throw new Error("Nome da empresa é obrigatório");
-  if (cnpj.length !== 14) throw new Error("CNPJ é obrigatório e deve conter exatamente 14 dígitos");
-  if (contactPhone.length > 11) throw new Error("Telefone deve conter no máximo 11 dígitos");
+  const documentError = validateDocument(document);
+  if (documentError) throw new Error(documentError);
+  const phoneError = validatePhone(phoneCountry, phoneNational);
+  if (phoneError) throw new Error(phoneError);
   if (!workplace) throw new Error("Posto de trabalho é obrigatório");
 
   await getDb().insert(companies).values({
     name,
-    cnpj,
+    cnpj: document,
     contactEmail,
-    contactPhone: contactPhone || null,
+    contactPhone: buildPhoneValue(phoneCountry, phoneNational) || null,
     workplace,
   });
   revalidatePath("/admin/companies");
@@ -34,18 +66,16 @@ export async function updateCompany(id: string, formData: FormData) {
   if (!id) return { ok: false as const, error: "Empresa inválida." };
 
   const name = String(formData.get("name") ?? "").trim();
-  const cnpj = String(formData.get("cnpj") ?? "").replace(/\D/g, "");
+  const document = readDocument(formData);
   const contactEmail = String(formData.get("contactEmail") ?? "").trim() || null;
-  const contactPhone = String(formData.get("contactPhone") ?? "").replace(/\D/g, "");
+  const { country: phoneCountry, national: phoneNational } = readPhone(formData);
   const workplace = String(formData.get("workplace") ?? "").trim();
 
   if (!name) return { ok: false as const, error: "Nome da empresa é obrigatório." };
-  if (cnpj.length !== 14) {
-    return { ok: false as const, error: "CNPJ é obrigatório e deve conter exatamente 14 dígitos." };
-  }
-  if (contactPhone.length > 11) {
-    return { ok: false as const, error: "Telefone deve conter no máximo 11 dígitos." };
-  }
+  const documentError = validateDocument(document);
+  if (documentError) return { ok: false as const, error: documentError };
+  const phoneError = validatePhone(phoneCountry, phoneNational);
+  if (phoneError) return { ok: false as const, error: phoneError };
   if (!workplace) {
     return { ok: false as const, error: "Posto de trabalho é obrigatório." };
   }
@@ -54,9 +84,9 @@ export async function updateCompany(id: string, formData: FormData) {
     .update(companies)
     .set({
       name,
-      cnpj,
+      cnpj: document,
       contactEmail,
-      contactPhone: contactPhone || null,
+      contactPhone: buildPhoneValue(phoneCountry, phoneNational) || null,
       workplace,
       updatedAt: new Date(),
     })
