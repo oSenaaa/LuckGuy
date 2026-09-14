@@ -42,4 +42,4 @@ yarn-error.log*
 next-env.d.ts
 
 # claude code local settings
-.claude/settings.local.json
+.claude/

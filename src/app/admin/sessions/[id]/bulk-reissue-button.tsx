@@ -23,9 +23,13 @@ export function BulkReissueButton({
   async function handleReissueAll() {
     setPending(true);
     try {
-      const results = await Promise.all(
-        participantIds.map((participantId) => reissueCertificate(participantId, sessionId)),
-      );
+      // Sequential on purpose: firing every reissue at once bursts auth checks
+      // and DB/blob calls together, which is more likely to trip rate limits
+      // than the same work spread out over a few seconds.
+      const results = [];
+      for (const participantId of participantIds) {
+        results.push(await reissueCertificate(participantId, sessionId));
+      }
       const failed = results.filter((result) => !result.ok).length;
       const succeeded = results.length - failed;
 

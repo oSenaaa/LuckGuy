@@ -84,13 +84,28 @@ export async function archiveSession(formData: FormData) {
 }
 
 export async function reissueCertificate(participantId: string, sessionId: string) {
-  await requireAdmin();
+  try {
+    await requireAdmin();
+  } catch (err) {
+    console.error("Falha ao confirmar sessão de admin ao reemitir certificado", { participantId, sessionId, error: err });
+    return {
+      ok: false as const,
+      error: "Não foi possível confirmar sua sessão. Atualize a página e tente novamente.",
+    };
+  }
+
   if (!participantId) return { ok: false as const, error: "Participante inválido." };
 
   try {
     await issueCertificate(participantId, { reissue: true });
   } catch (err) {
-    if (!(err instanceof CertificateError)) throw err;
+    if (!(err instanceof CertificateError)) {
+      console.error("Falha inesperada ao reemitir certificado", { participantId, sessionId, error: err });
+      return {
+        ok: false as const,
+        error: "Falha inesperada ao reemitir. Tente novamente em instantes.",
+      };
+    }
     console.error("Falha ao reemitir certificado", { participantId, sessionId, error: err });
     return { ok: false as const, error: err.message };
   }
