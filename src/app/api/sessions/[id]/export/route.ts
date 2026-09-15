@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { certificates, participants, viewingProgress } from "@/lib/db/schema";
+import { certificates, companies, companyWorkplaces, participants, viewingProgress } from "@/lib/db/schema";
 import { AdminAuthError, requireAdmin } from "@/lib/require-admin";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 
@@ -43,6 +43,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     .select({
       fullName: participants.fullName,
       phone: participants.phone,
+      companyName: companies.name,
+      workplaceName: companyWorkplaces.name,
       watchedPercent: viewingProgress.watchedPercent,
       completedAt: viewingProgress.completedAt,
       certificateCode: certificates.verificationCode,
@@ -53,13 +55,25 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       certificates,
       and(eq(certificates.participantId, participants.id), isNull(certificates.revokedAt)),
     )
+    .leftJoin(companies, eq(companies.id, participants.companyId))
+    .leftJoin(companyWorkplaces, eq(companyWorkplaces.id, participants.workplaceId))
     .where(eq(participants.courseSessionId, id));
 
-  const header = ["Nome", "Telefone", "% assistido", "Concluído", "Código do certificado"];
+  const header = [
+    "Nome",
+    "Telefone",
+    "Empresa",
+    "Posto de trabalho",
+    "% assistido",
+    "Concluído",
+    "Código do certificado",
+  ];
   const lines = rows.map((row) =>
     [
       row.fullName,
       row.phone,
+      row.companyName ?? "",
+      row.workplaceName ?? "",
       row.watchedPercent ? Number(row.watchedPercent).toFixed(0) : "0",
       row.completedAt ? "Sim" : "Não",
       row.certificateCode ?? "",

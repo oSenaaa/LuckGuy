@@ -3,7 +3,14 @@ import { redirect } from "next/navigation";
 import { CalendarClock, CalendarX, GraduationCap } from "lucide-react";
 
 import { getDb } from "@/lib/db";
-import { courseSessions, courses } from "@/lib/db/schema";
+import {
+  companies,
+  companyWorkplaces,
+  courseSessionCompanies,
+  courseSessions,
+  courseSessionWorkplaces,
+  courses,
+} from "@/lib/db/schema";
 import { getParticipantId } from "@/lib/participant-session";
 import { formatWorkload, resolveWorkloadHours } from "@/lib/workload";
 import { IdentifyForm } from "./identify-form";
@@ -88,6 +95,30 @@ export default async function IdentifyPage({
     redirect(`/t/${slug}/assistir`);
   }
 
+  const [sessionCompanies, sessionWorkplaces] = await Promise.all([
+    db
+      .select({ id: companies.id, name: companies.name })
+      .from(courseSessionCompanies)
+      .innerJoin(companies, eq(companies.id, courseSessionCompanies.companyId))
+      .where(eq(courseSessionCompanies.courseSessionId, session.id)),
+    db
+      .select({
+        id: companyWorkplaces.id,
+        name: companyWorkplaces.name,
+        companyId: companyWorkplaces.companyId,
+      })
+      .from(courseSessionWorkplaces)
+      .innerJoin(companyWorkplaces, eq(companyWorkplaces.id, courseSessionWorkplaces.workplaceId))
+      .where(eq(courseSessionWorkplaces.courseSessionId, session.id)),
+  ]);
+  const sessionCompaniesWithWorkplaces = sessionCompanies.map((company) => ({
+    id: company.id,
+    name: company.name,
+    workplaces: sessionWorkplaces
+      .filter((workplace) => workplace.companyId === company.id)
+      .map((workplace) => ({ id: workplace.id, name: workplace.name })),
+  }));
+
   return (
     <div className="flex min-h-[70vh] items-center justify-center p-6">
       <Card className="w-full max-w-md">
@@ -102,7 +133,11 @@ export default async function IdentifyPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <IdentifyForm accessSlug={slug} requiresPin={Boolean(session.accessPin)} />
+          <IdentifyForm
+            accessSlug={slug}
+            requiresPin={Boolean(session.accessPin)}
+            companies={sessionCompaniesWithWorkplaces}
+          />
         </CardContent>
       </Card>
     </div>

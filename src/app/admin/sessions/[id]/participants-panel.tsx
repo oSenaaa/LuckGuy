@@ -27,6 +27,8 @@ type Participant = {
   completedAt: Date | null;
   certificateUrl: string | null;
   certificateCode: string | null;
+  companyName: string | null;
+  workplaceName: string | null;
 };
 
 export function ParticipantsPanel({
@@ -112,6 +114,8 @@ export function ParticipantsPanel({
                 </TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Telefone</TableHead>
+                <TableHead>Empresa</TableHead>
+                <TableHead>Posto de trabalho</TableHead>
                 <TableHead className="text-right">% assistido</TableHead>
                 <TableHead>Concluído</TableHead>
                 <TableHead className="text-right">Certificado</TableHead>
@@ -131,6 +135,8 @@ export function ParticipantsPanel({
                   </TableCell>
                   <TableCell className="font-medium">{p.fullName}</TableCell>
                   <TableCell className="text-muted-foreground">{p.phone}</TableCell>
+                  <TableCell className="text-muted-foreground">{p.companyName ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{p.workplaceName ?? "—"}</TableCell>
                   <TableCell className="text-right tabular-nums">
                     {p.watchedPercent ? Number(p.watchedPercent).toFixed(0) : 0}%
                   </TableCell>

@@ -1,6 +1,14 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../src/lib/db";
-import { companies, courses, courseSessions, participants } from "../src/lib/db/schema";
+import {
+  companies,
+  companyWorkplaces,
+  courses,
+  courseSessions,
+  courseSessionCompanies,
+  courseSessionWorkplaces,
+  participants,
+} from "../src/lib/db/schema";
 import { generateAccessSlug } from "../src/lib/access-slug";
 
 const YOUTUBE_VIDEO_ID = "b3qZg2EhIxQ";
@@ -18,6 +26,21 @@ async function main() {
     console.log("Empresa criada:", company.id);
   } else {
     console.log("Empresa reaproveitada:", company.id);
+  }
+
+  let [workplace] = await db
+    .select()
+    .from(companyWorkplaces)
+    .where(eq(companyWorkplaces.companyId, company.id))
+    .limit(1);
+  if (!workplace) {
+    [workplace] = await db
+      .insert(companyWorkplaces)
+      .values({ companyId: company.id, name: "Posto Teste" })
+      .returning();
+    console.log("Posto de trabalho criado:", workplace.id);
+  } else {
+    console.log("Posto de trabalho reaproveitado:", workplace.id);
   }
 
   let [course] = await db.select().from(courses).where(eq(courses.slug, "nr-15-teste")).limit(1);
@@ -45,7 +68,6 @@ async function main() {
     .insert(courseSessions)
     .values({
       courseId: course.id,
-      companyId: company.id,
       name: "NR-15 - Turma de Teste",
       workloadHours: (YOUTUBE_DURATION_SECONDS / 3600).toFixed(2),
       accessSlug,
@@ -54,12 +76,23 @@ async function main() {
     .returning();
   console.log("Turma criada:", session.id);
 
+  await db
+    .insert(courseSessionCompanies)
+    .values({ courseSessionId: session.id, companyId: company.id })
+    .onConflictDoNothing();
+  await db
+    .insert(courseSessionWorkplaces)
+    .values({ courseSessionId: session.id, workplaceId: workplace.id })
+    .onConflictDoNothing();
+
   const [participant] = await db
     .insert(participants)
     .values({
       courseSessionId: session.id,
       fullName: "Colaborador Teste",
       phone: "11999999999",
+      companyId: company.id,
+      workplaceId: workplace.id,
     })
     .returning();
   console.log("Participante fictício criado:", participant.id);

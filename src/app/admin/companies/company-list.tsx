@@ -19,7 +19,6 @@ type Company = {
   id: string;
   name: string;
   cnpj: string | null;
-  workplace: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
   archivedAt: Date | null;
@@ -42,7 +41,6 @@ function CompanyRow({ company }: { company: Company }) {
         id={company.id}
         name={company.name}
         cnpj={company.cnpj}
-        workplace={company.workplace}
         contactEmail={company.contactEmail}
         contactPhone={company.contactPhone}
         isArchived={Boolean(company.archivedAt)}
@@ -63,7 +61,6 @@ export function CompanyList({ companies }: { companies: Company[] }) {
 
     return companies.filter((company) => {
       if (normalizeText(company.name).includes(normalizedTerm)) return true;
-      if (normalizeText(company.workplace ?? "").includes(normalizedTerm)) return true;
       if (digitsTerm && onlyDigits(company.cnpj ?? "").includes(digitsTerm)) return true;
       return false;
     });
@@ -82,7 +79,7 @@ export function CompanyList({ companies }: { companies: Company[] }) {
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar por nome, CNPJ/CPF ou posto"
+              placeholder="Buscar por nome ou CNPJ/CPF"
               className="w-48 pl-8 sm:w-64"
             />
           </div>

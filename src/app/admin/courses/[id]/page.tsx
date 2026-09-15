@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { GraduationCap, PenLine, Trash2, Video } from "lucide-react";
 
 import { getDb } from "@/lib/db";
-import { certificateSignatures, companies, courses, courseSessions } from "@/lib/db/schema";
+import { certificateSignatures, courses, courseSessions } from "@/lib/db/schema";
+import { getCompanyNamesBySessionId } from "@/lib/sessions";
 import { deleteCourse, setCourseSignature, updateCourse } from "../actions";
 import { VideoUpload } from "./video-upload";
 import { DurationInput } from "@/components/admin/duration-input";
@@ -38,20 +39,26 @@ export default async function CourseDetailPage({
   const [course] = await db.select().from(courses).where(eq(courses.id, id)).limit(1);
   if (!course) notFound();
 
-  const [sessions, signatureList] = await Promise.all([
+  const [sessionList, signatureList] = await Promise.all([
     db
       .select({
         id: courseSessions.id,
         name: courseSessions.name,
         status: courseSessions.status,
-        companyName: companies.name,
       })
       .from(courseSessions)
-      .innerJoin(companies, eq(companies.id, courseSessions.companyId))
       .where(eq(courseSessions.courseId, id))
       .orderBy(desc(courseSessions.createdAt)),
     db.select().from(certificateSignatures).orderBy(desc(certificateSignatures.isDefault)),
   ]);
+
+  const companyNamesBySession = await getCompanyNamesBySessionId(
+    sessionList.map((session) => session.id),
+  );
+  const sessions = sessionList.map((session) => ({
+    ...session,
+    companyName: companyNamesBySession.get(session.id) ?? "",
+  }));
 
   const defaultSignature = signatureList.find((signature) => signature.isDefault);
   const resolvedSignature = course.coordinatorSignatureId

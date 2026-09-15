@@ -3,25 +3,32 @@ import { desc, eq } from "drizzle-orm";
 import { Building2, GraduationCap, LayoutDashboard, Plus } from "lucide-react";
 
 import { getDb } from "@/lib/db";
-import { companies, courseSessions, courses } from "@/lib/db/schema";
+import { courseSessions, courses } from "@/lib/db/schema";
+import { getCompanyNamesBySessionId } from "@/lib/sessions";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionsTable } from "@/components/admin/sessions-table";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export default async function AdminDashboard() {
-  const sessions = await getDb()
+  const sessionList = await getDb()
     .select({
       id: courseSessions.id,
       name: courseSessions.name,
       status: courseSessions.status,
       courseName: courses.name,
-      companyName: companies.name,
     })
     .from(courseSessions)
     .innerJoin(courses, eq(courses.id, courseSessions.courseId))
-    .innerJoin(companies, eq(companies.id, courseSessions.companyId))
     .orderBy(desc(courseSessions.createdAt));
+
+  const companyNamesBySession = await getCompanyNamesBySessionId(
+    sessionList.map((session) => session.id),
+  );
+  const sessions = sessionList.map((session) => ({
+    ...session,
+    companyName: companyNamesBySession.get(session.id) ?? "",
+  }));
 
   const shortcuts = [
     { label: "Nova turma", href: "/admin/sessions/new", icon: Plus, primary: true },

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { companies } from "@/lib/db/schema";
+import { companies, companyWorkplaces } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/require-admin";
 import { isValidCpfCnpj, onlyDigits } from "@/lib/document";
 import { DEFAULT_PHONE_COUNTRY, buildPhoneValue } from "@/lib/phone";
@@ -42,21 +42,18 @@ export async function createCompany(formData: FormData) {
   const document = readDocument(formData);
   const contactEmail = String(formData.get("contactEmail") ?? "").trim() || null;
   const { country: phoneCountry, national: phoneNational } = readPhone(formData);
-  const workplace = String(formData.get("workplace") ?? "").trim();
 
   if (!name) throw new Error("Nome da empresa é obrigatório");
   const documentError = validateDocument(document);
   if (documentError) throw new Error(documentError);
   const phoneError = validatePhone(phoneCountry, phoneNational);
   if (phoneError) throw new Error(phoneError);
-  if (!workplace) throw new Error("Posto de trabalho é obrigatório");
 
   await getDb().insert(companies).values({
     name,
     cnpj: document,
     contactEmail,
     contactPhone: buildPhoneValue(phoneCountry, phoneNational) || null,
-    workplace,
   });
   revalidatePath("/admin/companies");
 }
@@ -69,16 +66,12 @@ export async function updateCompany(id: string, formData: FormData) {
   const document = readDocument(formData);
   const contactEmail = String(formData.get("contactEmail") ?? "").trim() || null;
   const { country: phoneCountry, national: phoneNational } = readPhone(formData);
-  const workplace = String(formData.get("workplace") ?? "").trim();
 
   if (!name) return { ok: false as const, error: "Nome da empresa é obrigatório." };
   const documentError = validateDocument(document);
   if (documentError) return { ok: false as const, error: documentError };
   const phoneError = validatePhone(phoneCountry, phoneNational);
   if (phoneError) return { ok: false as const, error: phoneError };
-  if (!workplace) {
-    return { ok: false as const, error: "Posto de trabalho é obrigatório." };
-  }
 
   await getDb()
     .update(companies)
@@ -87,7 +80,6 @@ export async function updateCompany(id: string, formData: FormData) {
       cnpj: document,
       contactEmail,
       contactPhone: buildPhoneValue(phoneCountry, phoneNational) || null,
-      workplace,
       updatedAt: new Date(),
     })
     .where(eq(companies.id, id));
@@ -118,5 +110,62 @@ export async function unarchiveCompany(id: string) {
     .set({ archivedAt: null, updatedAt: new Date() })
     .where(eq(companies.id, id));
   revalidatePath("/admin/companies");
+  return { ok: true as const };
+}
+
+export async function addWorkplace(companyId: string, formData: FormData) {
+  await requireAdmin();
+  if (!companyId) return { ok: false as const, error: "Empresa inválida." };
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return { ok: false as const, error: "Nome do posto é obrigatório." };
+
+  await getDb().insert(companyWorkplaces).values({ companyId, name });
+  revalidatePath(`/admin/companies/${companyId}`);
+  return { ok: true as const };
+}
+
+export async function updateWorkplace(id: string, formData: FormData) {
+  await requireAdmin();
+  if (!id) return { ok: false as const, error: "Posto inválido." };
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return { ok: false as const, error: "Nome do posto é obrigatório." };
+
+  const [workplace] = await getDb()
+    .update(companyWorkplaces)
+    .set({ name, updatedAt: new Date() })
+    .where(eq(companyWorkplaces.id, id))
+    .returning({ companyId: companyWorkplaces.companyId });
+
+  if (workplace) revalidatePath(`/admin/companies/${workplace.companyId}`);
+  return { ok: true as const };
+}
+
+export async function archiveWorkplace(id: string) {
+  await requireAdmin();
+  if (!id) return { ok: false as const, error: "Posto inválido." };
+
+  const [workplace] = await getDb()
+    .update(companyWorkplaces)
+    .set({ archivedAt: new Date(), updatedAt: new Date() })
+    .where(eq(companyWorkplaces.id, id))
+    .returning({ companyId: companyWorkplaces.companyId });
+
+  if (workplace) revalidatePath(`/admin/companies/${workplace.companyId}`);
+  return { ok: true as const };
+}
+
+export async function unarchiveWorkplace(id: string) {
+  await requireAdmin();
+  if (!id) return { ok: false as const, error: "Posto inválido." };
+
+  const [workplace] = await getDb()
+    .update(companyWorkplaces)
+    .set({ archivedAt: null, updatedAt: new Date() })
+    .where(eq(companyWorkplaces.id, id))
+    .returning({ companyId: companyWorkplaces.companyId });
+
+  if (workplace) revalidatePath(`/admin/companies/${workplace.companyId}`);
   return { ok: true as const };
 }

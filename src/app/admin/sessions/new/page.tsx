@@ -1,10 +1,10 @@
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { CalendarPlus } from "lucide-react";
 
 import { getDb } from "@/lib/db";
-import { companies, courses } from "@/lib/db/schema";
+import { companies, companyWorkplaces, courses } from "@/lib/db/schema";
 import { createSession } from "../actions";
-import { CompanyCombobox } from "./company-combobox";
+import { CompanySelector } from "./company-selector";
 import { CourseAndDurationFields } from "./course-and-duration-fields";
 import { PageHeader } from "@/components/admin/page-header";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -20,10 +20,18 @@ import {
 
 export default async function NewSessionPage() {
   const db = getDb();
-  const [courseList, companyList] = await Promise.all([
+  const [courseList, companyList, workplaceList] = await Promise.all([
     db.select().from(courses).where(eq(courses.isActive, true)),
-    db.select().from(companies),
+    db.select().from(companies).where(isNull(companies.archivedAt)),
+    db.select().from(companyWorkplaces).where(isNull(companyWorkplaces.archivedAt)),
   ]);
+  const companiesWithWorkplaces = companyList.map((company) => ({
+    id: company.id,
+    name: company.name,
+    workplaces: workplaceList
+      .filter((workplace) => workplace.companyId === company.id)
+      .map((workplace) => ({ id: workplace.id, name: workplace.name })),
+  }));
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6">
@@ -55,8 +63,8 @@ export default async function NewSessionPage() {
             />
 
             <div className="grid gap-2">
-              <Label htmlFor="companyId">Empresa cliente</Label>
-              <CompanyCombobox companies={companyList} />
+              <Label>Empresas clientes</Label>
+              <CompanySelector companies={companiesWithWorkplaces} />
             </div>
 
             <div className="grid gap-2">

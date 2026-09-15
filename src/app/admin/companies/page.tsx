@@ -37,7 +37,8 @@ export default async function CompaniesPage() {
         <CardHeader className="border-b">
           <CardTitle>Nova empresa</CardTitle>
           <CardDescription>
-            Nome, CNPJ/CPF e posto de trabalho são obrigatórios. Os demais campos são opcionais.
+            Nome e CNPJ/CPF são obrigatórios. Os postos de trabalho podem ser adicionados
+            depois, na página da empresa.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -54,15 +55,6 @@ export default async function CompaniesPage() {
                 required
                 title="Digite o CPF (11 dígitos) ou CNPJ (14 dígitos)"
                 placeholder="Somente números"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="workplace">Posto de trabalho</Label>
-              <Input
-                id="workplace"
-                name="workplace"
-                required
-                placeholder="Ex: Obra Alfa - Setor Administrativo"
               />
             </div>
             <div className="grid gap-2">

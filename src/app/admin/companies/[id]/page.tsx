@@ -3,7 +3,14 @@ import { notFound } from "next/navigation";
 import { Briefcase, Building2, Mail, Phone } from "lucide-react";
 
 import { getDb } from "@/lib/db";
-import { companies, courseSessions, courses } from "@/lib/db/schema";
+import {
+  companies,
+  companyWorkplaces,
+  courseSessionCompanies,
+  courseSessions,
+  courses,
+} from "@/lib/db/schema";
+import { WorkplacesPanel } from "./workplaces-panel";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
 import {
@@ -31,17 +38,29 @@ export default async function CompanyDetailPage({
 
   if (!company) notFound();
 
-  const sessions = await db
-    .select({
-      id: courseSessions.id,
-      name: courseSessions.name,
-      status: courseSessions.status,
-      courseName: courses.name,
-    })
-    .from(courseSessions)
-    .innerJoin(courses, eq(courses.id, courseSessions.courseId))
-    .where(eq(courseSessions.companyId, id))
-    .orderBy(desc(courseSessions.createdAt));
+  const [sessions, workplaces] = await Promise.all([
+    db
+      .select({
+        id: courseSessions.id,
+        name: courseSessions.name,
+        status: courseSessions.status,
+        courseName: courses.name,
+      })
+      .from(courseSessionCompanies)
+      .innerJoin(courseSessions, eq(courseSessions.id, courseSessionCompanies.courseSessionId))
+      .innerJoin(courses, eq(courses.id, courseSessions.courseId))
+      .where(eq(courseSessionCompanies.companyId, id))
+      .orderBy(desc(courseSessions.createdAt)),
+    db
+      .select({
+        id: companyWorkplaces.id,
+        name: companyWorkplaces.name,
+        archivedAt: companyWorkplaces.archivedAt,
+      })
+      .from(companyWorkplaces)
+      .where(eq(companyWorkplaces.companyId, id))
+      .orderBy(companyWorkplaces.createdAt),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
@@ -59,17 +78,6 @@ export default async function CompanyDetailPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="flex items-start gap-3">
-            <Briefcase className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            <div>
-              <p className="text-xs text-muted-foreground">Posto de trabalho</p>
-              <p className="font-medium">
-                {company.workplace ?? (
-                  <span className="text-muted-foreground">Não informado</span>
-                )}
-              </p>
-            </div>
-          </div>
           <div className="flex items-start gap-3">
             <Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             <div>
@@ -92,6 +100,21 @@ export default async function CompanyDetailPage({
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle className="flex items-center gap-2">
+            <Briefcase className="size-4 text-muted-foreground" />
+            Postos de trabalho
+          </CardTitle>
+          <CardDescription>
+            Locais de trabalho dentro deste CNPJ, usados na criação de turmas.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <WorkplacesPanel companyId={company.id} workplaces={workplaces} />
         </CardContent>
       </Card>
 

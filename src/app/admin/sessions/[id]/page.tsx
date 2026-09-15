@@ -16,6 +16,7 @@ import { getDb } from "@/lib/db";
 import {
   certificates,
   companies,
+  companyWorkplaces,
   courseSessions,
   courses,
   participants,
@@ -24,7 +25,7 @@ import {
 import { archiveSession, publishSession } from "../actions";
 import { ParticipantsPanel } from "./participants-panel";
 import { formatWorkload, resolveWorkloadHours } from "@/lib/workload";
-import { archiveExpiredSessions } from "@/lib/sessions";
+import { archiveExpiredSessions, getCompanyNamesBySessionId } from "@/lib/sessions";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
 import { CopyButton } from "@/components/copy-button";
@@ -57,17 +58,18 @@ export default async function SessionDetailPage({
       videoBlobUrl: courses.videoBlobUrl,
       videoYoutubeId: courses.videoYoutubeId,
       videoDurationSeconds: courses.videoDurationSeconds,
-      companyName: companies.name,
       startsAt: courseSessions.startsAt,
       endsAt: courseSessions.endsAt,
     })
     .from(courseSessions)
     .innerJoin(courses, eq(courses.id, courseSessions.courseId))
-    .innerJoin(companies, eq(companies.id, courseSessions.companyId))
     .where(eq(courseSessions.id, id))
     .limit(1);
 
   if (!session) notFound();
+
+  const companyNamesBySession = await getCompanyNamesBySessionId([session.id]);
+  const companyName = companyNamesBySession.get(session.id) ?? "";
 
   const participantsList = await db
     .select({
@@ -78,6 +80,8 @@ export default async function SessionDetailPage({
       completedAt: viewingProgress.completedAt,
       certificateUrl: certificates.pdfBlobUrl,
       certificateCode: certificates.verificationCode,
+      companyName: companies.name,
+      workplaceName: companyWorkplaces.name,
     })
     .from(participants)
     .leftJoin(viewingProgress, eq(viewingProgress.participantId, participants.id))
@@ -88,6 +92,8 @@ export default async function SessionDetailPage({
         isNull(certificates.revokedAt),
       ),
     )
+    .leftJoin(companies, eq(companies.id, participants.companyId))
+    .leftJoin(companyWorkplaces, eq(companyWorkplaces.id, participants.workplaceId))
     .where(eq(participants.courseSessionId, id));
 
   const publicPath = `/t/${session.accessSlug}`;
@@ -119,7 +125,7 @@ export default async function SessionDetailPage({
       <PageHeader
         icon={Users}
         title={session.name}
-        description={`${session.courseName} · ${session.companyName} · ${formatWorkload(resolveWorkloadHours(session.defaultDurationMinutes, Number(session.workloadHours)))}`}
+        description={`${session.courseName} · ${companyName} · ${formatWorkload(resolveWorkloadHours(session.defaultDurationMinutes, Number(session.workloadHours)))}`}
       >
         <SessionStatusBadge status={session.status} />
       </PageHeader>

@@ -9,7 +9,13 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { courseSessions, participants } from "@/lib/db/schema";
+import {
+  companyWorkplaces,
+  courseSessionCompanies,
+  courseSessions,
+  courseSessionWorkplaces,
+  participants,
+} from "@/lib/db/schema";
 import { createParticipantSession } from "@/lib/participant-session";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 
@@ -36,6 +42,8 @@ export async function identifyParticipant(
   const fullName = normalizeName(String(formData.get("fullName") ?? ""));
   const phone = normalizePhone(String(formData.get("phone") ?? ""));
   const accessPin = normalizePhone(String(formData.get("accessPin") ?? ""));
+  const companyId = String(formData.get("companyId") ?? "").trim();
+  const workplaceId = String(formData.get("workplaceId") ?? "").trim();
 
   const ip = clientIp(await headers());
   const limited = await rateLimit("identify", `${ip}:${accessSlug}`, {
@@ -79,11 +87,49 @@ export async function identifyParticipant(
       return { error: "O prazo para assistir a este treinamento encerrou." };
     }
 
+    // Nunca confiamos no companyId/workplaceId enviado pelo form: revalidamos
+    // contra os vínculos reais da turma (uma turma pode ter várias empresas/postos).
+    const [companyLink] = companyId
+      ? await db
+          .select({ companyId: courseSessionCompanies.companyId })
+          .from(courseSessionCompanies)
+          .where(
+            and(
+              eq(courseSessionCompanies.courseSessionId, session.id),
+              eq(courseSessionCompanies.companyId, companyId),
+            ),
+          )
+          .limit(1)
+      : [];
+
+    if (!companyLink) {
+      return { error: "Selecione a empresa responsável por você nesta turma." };
+    }
+
+    const eligibleWorkplaces = await db
+      .select({ workplaceId: courseSessionWorkplaces.workplaceId })
+      .from(courseSessionWorkplaces)
+      .innerJoin(companyWorkplaces, eq(companyWorkplaces.id, courseSessionWorkplaces.workplaceId))
+      .where(
+        and(
+          eq(courseSessionWorkplaces.courseSessionId, session.id),
+          eq(companyWorkplaces.companyId, companyId),
+        ),
+      );
+
+    let validWorkplaceId: string | null = null;
+    if (eligibleWorkplaces.length > 0) {
+      if (!workplaceId || !eligibleWorkplaces.some((w) => w.workplaceId === workplaceId)) {
+        return { error: "Selecione seu posto de trabalho." };
+      }
+      validWorkplaceId = workplaceId;
+    }
+
     // Primeiro a se identificar com um telefone é o dono do registro: não
     // sobrescrevemos o nome de quem já entrou (evita troca de identidade).
     const [inserted] = await db
       .insert(participants)
-      .values({ courseSessionId: session.id, fullName, phone })
+      .values({ courseSessionId: session.id, fullName, phone, companyId, workplaceId: validWorkplaceId })
       .onConflictDoNothing({
         target: [participants.courseSessionId, participants.phone],
       })

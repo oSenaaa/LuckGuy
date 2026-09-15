@@ -27,7 +27,15 @@ export const companies = pgTable("companies", {
   cnpj: text("cnpj").unique(),
   contactEmail: text("contact_email"),
   contactPhone: text("contact_phone"),
-  workplace: text("workplace"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const companyWorkplaces = pgTable("company_workplaces", {
+  id: uuid("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  companyId: uuid("company_id").notNull().references(() => companies.id),
+  name: text("name").notNull(),
   archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -80,7 +88,6 @@ export const certificateSignatures = pgTable("certificate_signatures", {
 export const courseSessions = pgTable("course_sessions", {
   id: uuid("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   courseId: uuid("course_id").notNull().references(() => courses.id),
-  companyId: uuid("company_id").notNull().references(() => companies.id),
   name: text("name").notNull(),
   workloadHours: numeric("workload_hours", { precision: 5, scale: 2 }).notNull(),
   accessSlug: text("access_slug").notNull().unique(),
@@ -106,6 +113,38 @@ export const courseSessions = pgTable("course_sessions", {
   check("course_sessions_workload_hours_positive", sql`${table.workloadHours} > 0`),
 ]);
 
+export const courseSessionCompanies = pgTable(
+  "course_session_companies",
+  {
+    id: uuid("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    courseSessionId: uuid("course_session_id").notNull().references(() => courseSessions.id),
+    companyId: uuid("company_id").notNull().references(() => companies.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("course_session_companies_session_company_idx").on(
+      table.courseSessionId,
+      table.companyId,
+    ),
+  ],
+);
+
+export const courseSessionWorkplaces = pgTable(
+  "course_session_workplaces",
+  {
+    id: uuid("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    courseSessionId: uuid("course_session_id").notNull().references(() => courseSessions.id),
+    workplaceId: uuid("workplace_id").notNull().references(() => companyWorkplaces.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("course_session_workplaces_session_workplace_idx").on(
+      table.courseSessionId,
+      table.workplaceId,
+    ),
+  ],
+);
+
 export const participants = pgTable(
   "participants",
   {
@@ -114,6 +153,8 @@ export const participants = pgTable(
     fullName: text("full_name").notNull(),
     phone: text("phone").notNull(),
     cpf: text("cpf"),
+    companyId: uuid("company_id").references(() => companies.id),
+    workplaceId: uuid("workplace_id").references(() => companyWorkplaces.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

@@ -3,8 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { getDb } from "@/lib/db";
-import { courses, courseSessions } from "@/lib/db/schema";
+import {
+  companyWorkplaces,
+  courses,
+  courseSessionCompanies,
+  courseSessions,
+  courseSessionWorkplaces,
+} from "@/lib/db/schema";
 import { generateAccessSlug, generateAccessPin } from "@/lib/access-slug";
 import { CertificateError, issueCertificate } from "@/lib/certificate/issue";
 import { requireAdmin } from "@/lib/require-admin";
@@ -16,13 +23,18 @@ function parseBrasiliaDateTime(value: string) {
 export async function createSession(formData: FormData) {
   const { userId } = await requireAdmin();
   const courseId = String(formData.get("courseId") ?? "");
-  const companyId = String(formData.get("companyId") ?? "");
+  const companyIds = [...new Set(formData.getAll("companyIds").map(String).filter(Boolean))];
+  const existingWorkplaceIds = [
+    ...new Set(formData.getAll("workplaceIds").map(String).filter(Boolean)),
+  ];
+  const newWorkplaceCompanyIds = formData.getAll("newWorkplaceCompanyId").map(String);
+  const newWorkplaceNames = formData.getAll("newWorkplaceName").map(String);
   const name = String(formData.get("name") ?? "").trim();
   const startsAtRaw = String(formData.get("startsAt") ?? "");
   const endsAtRaw = String(formData.get("endsAt") ?? "");
 
-  if (!courseId || !companyId || !name) {
-    throw new Error("Preencha treinamento, empresa e nome da turma");
+  if (!courseId || companyIds.length === 0 || !name) {
+    throw new Error("Preencha treinamento, ao menos uma empresa e nome da turma");
   }
 
   const db = getDb();
@@ -35,11 +47,21 @@ export async function createSession(formData: FormData) {
   }
   const workloadHours = course.defaultDurationMinutes / 60;
 
-  const [session] = await db
-    .insert(courseSessions)
-    .values({
-      courseId,
+  const sessionId = crypto.randomUUID();
+  const newWorkplaces = newWorkplaceCompanyIds
+    .map((companyId, index) => ({
+      id: crypto.randomUUID(),
       companyId,
+      name: (newWorkplaceNames[index] ?? "").trim(),
+    }))
+    .filter((workplace) => workplace.companyId && companyIds.includes(workplace.companyId) && workplace.name);
+
+  const workplaceIds = [...new Set([...existingWorkplaceIds, ...newWorkplaces.map((w) => w.id)])];
+
+  const batch: BatchItem<"pg">[] = [
+    db.insert(courseSessions).values({
+      id: sessionId,
+      courseId,
       name,
       workloadHours: workloadHours.toFixed(2),
       accessSlug: generateAccessSlug(),
@@ -47,11 +69,32 @@ export async function createSession(formData: FormData) {
       startsAt: parseBrasiliaDateTime(startsAtRaw),
       endsAt: parseBrasiliaDateTime(endsAtRaw),
       createdByClerkUserId: userId,
-    })
-    .returning({ id: courseSessions.id });
+    }),
+  ];
+  for (const workplace of newWorkplaces) {
+    batch.push(
+      db.insert(companyWorkplaces).values({
+        id: workplace.id,
+        companyId: workplace.companyId,
+        name: workplace.name,
+      }),
+    );
+  }
+  for (const companyId of companyIds) {
+    batch.push(
+      db.insert(courseSessionCompanies).values({ courseSessionId: sessionId, companyId }),
+    );
+  }
+  for (const workplaceId of workplaceIds) {
+    batch.push(
+      db.insert(courseSessionWorkplaces).values({ courseSessionId: sessionId, workplaceId }),
+    );
+  }
+
+  await db.batch(batch as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
 
   revalidatePath("/admin/sessions");
-  redirect(`/admin/sessions/${session.id}`);
+  redirect(`/admin/sessions/${sessionId}`);
 }
 
 export async function publishSession(formData: FormData) {

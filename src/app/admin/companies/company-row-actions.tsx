@@ -35,7 +35,6 @@ type CompanyRowActionsProps = {
   id: string;
   name: string;
   cnpj: string | null;
-  workplace: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
   isArchived: boolean;
@@ -45,7 +44,6 @@ export function CompanyRowActions({
   id,
   name,
   cnpj,
-  workplace,
   contactEmail,
   contactPhone,
   isArchived,
@@ -166,16 +164,6 @@ export function CompanyRowActions({
                 required
                 title="Digite o CPF (11 dígitos) ou CNPJ (14 dígitos)"
                 defaultValue={cnpj ?? ""}
-                disabled={editPending}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor={`edit-workplace-${id}`}>Posto de trabalho</Label>
-              <Input
-                id={`edit-workplace-${id}`}
-                name="workplace"
-                required
-                defaultValue={workplace ?? ""}
                 disabled={editPending}
               />
             </div>
