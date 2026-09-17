@@ -118,12 +118,14 @@ export function ParticipantsPanel({
                 <TableHead>Posto de trabalho</TableHead>
                 <TableHead className="text-right">% assistido</TableHead>
                 <TableHead>Concluído</TableHead>
-                <TableHead className="text-right">Certificado</TableHead>
+                <TableHead className="sticky right-0 z-10 border-l bg-background text-right">
+                  Certificado
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {participants.map((p) => (
-                <TableRow key={p.id}>
+                <TableRow key={p.id} className="group">
                   <TableCell>
                     {p.certificateUrl && (
                       <Checkbox
@@ -150,13 +152,12 @@ export function ParticipantsPanel({
                       <span className="text-muted-foreground">Não</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="sticky right-0 border-l bg-background group-hover:bg-muted/50">
                     {p.certificateUrl ? (
                       <div className="flex items-center justify-end gap-1">
-                        <Button asChild variant="ghost" size="sm">
+                        <Button asChild variant="ghost" size="icon-sm" aria-label="Baixar certificado" title="Baixar certificado">
                           <Link href={p.certificateUrl} target="_blank">
                             <Download />
-                            Baixar
                           </Link>
                         </Button>
                         <ReissueCertificateButton participantId={p.id} sessionId={sessionId} />

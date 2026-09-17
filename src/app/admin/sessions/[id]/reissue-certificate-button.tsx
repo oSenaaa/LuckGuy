@@ -39,12 +39,13 @@ export function ReissueCertificateButton({
     <Button
       type="button"
       variant="ghost"
-      size="sm"
+      size="icon-sm"
       disabled={pending}
       onClick={handleReissue}
+      aria-label="Reemitir certificado"
+      title="Reemitir certificado"
     >
       {pending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-      Reemitir
     </Button>
   );
 }
