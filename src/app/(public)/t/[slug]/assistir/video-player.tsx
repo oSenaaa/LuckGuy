@@ -816,7 +816,7 @@ export function VideoPlayer({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ courseSessionId }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Erro ao emitir certificado");
       setCertificateUrl(data.pdfUrl);
       toast.success("Certificado emitido com sucesso");

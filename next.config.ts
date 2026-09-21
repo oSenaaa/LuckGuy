@@ -36,6 +36,20 @@ const securityHeaders = [
   },
 ];
 
+// Sem estes segredos a emissão do certificado e a sessão do aluno lançam em
+// runtime (signCertificate / getSecret). Falhar o build de produção na Vercel
+// mantém o deploy anterior no ar, em vez de publicar uma versão que devolve 500.
+const requiredProductionEnv = ["CERTIFICATE_SIGNING_SECRET", "PARTICIPANT_SESSION_SECRET"];
+
+if (process.env.VERCEL_ENV === "production") {
+  const missing = requiredProductionEnv.filter((name) => !process.env[name]);
+  if (missing.length > 0) {
+    throw new Error(
+      `Variáveis de ambiente obrigatórias ausentes no build de produção: ${missing.join(", ")}`,
+    );
+  }
+}
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {

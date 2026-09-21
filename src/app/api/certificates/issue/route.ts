@@ -35,6 +35,13 @@ export async function POST(request: NextRequest) {
     if (err instanceof CertificateError) {
       return NextResponse.json({ error: err.message }, { status: 400 });
     }
-    throw err;
+    // Sem isto o Next devolve um 500 sem corpo JSON e o player só mostra um erro
+    // de parse; aqui registramos a causa real (ex. segredo de assinatura ausente)
+    // e devolvemos uma mensagem legível ao aluno.
+    console.error("Falha inesperada ao emitir certificado", { participantId, error: err });
+    return NextResponse.json(
+      { error: "Não foi possível emitir o certificado agora. Tente novamente em instantes." },
+      { status: 500 },
+    );
   }
 }
