@@ -5,6 +5,7 @@ import { getDb } from "@/lib/db";
 import { companies } from "@/lib/db/schema";
 import { createCompany } from "./actions";
 import { CompanyList } from "./company-list";
+import { ImportCompaniesForm } from "./import-companies-form";
 import { PageHeader } from "@/components/admin/page-header";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +72,8 @@ export default async function CompaniesPage() {
           </form>
         </CardContent>
       </Card>
+
+      <ImportCompaniesForm />
 
       <Card>
         <CompanyList companies={list} />
