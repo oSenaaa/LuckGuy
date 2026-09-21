@@ -4,6 +4,7 @@ const isAdminRoute = createRouteMatcher([
   "/admin(.*)",
   "/api/sessions(.*)",
   "/api/blob(.*)",
+  "/api/companies(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
