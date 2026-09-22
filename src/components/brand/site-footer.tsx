@@ -1,8 +1,17 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { LiderLogo } from "./logo";
 
 export function SiteFooter() {
+  const pathname = usePathname();
+  // O colaborador assistindo ao treinamento não deve ver links de navegação
+  // (nem para a home, nem para a área administrativa) — só a tela do vídeo.
+  // Mesmo padrão de rota usado em SiteHeader para esconder o botão de admin.
+  const isWatchPage = /^\/t\/[^/]+\/assistir\/?$/.test(pathname ?? "");
+
   return (
     <footer className="border-t bg-muted/40">
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
@@ -13,14 +22,16 @@ export function SiteFooter() {
             Regulamentadoras (NR).
           </p>
         </div>
-        <nav className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-          <Link href="/" className="transition-colors hover:text-foreground">
-            Início
-          </Link>
-          <Link href="/admin" className="transition-colors hover:text-foreground">
-            Área administrativa
-          </Link>
-        </nav>
+        {!isWatchPage && (
+          <nav className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+            <Link href="/" className="transition-colors hover:text-foreground">
+              Início
+            </Link>
+            <Link href="/admin" className="transition-colors hover:text-foreground">
+              Área administrativa
+            </Link>
+          </nav>
+        )}
       </div>
     </footer>
   );
