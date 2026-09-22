@@ -1,14 +1,14 @@
 import { desc } from "drizzle-orm";
-import { ArrowUpRight, GraduationCap, Video, VideoOff } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import Link from "next/link";
 
 import { getDb } from "@/lib/db";
 import { certificateSignatures, courses } from "@/lib/db/schema";
 import { createCourse } from "./actions";
+import { CoursesList } from "./courses-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { DurationInput } from "@/components/admin/duration-input";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -104,48 +104,7 @@ export default async function CoursesPage() {
       </Card>
 
       <Card>
-        <CardHeader className="border-b">
-          <CardTitle>Treinamentos cadastrados</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {list.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Nenhum treinamento cadastrado.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {list.map((course) => {
-                const hasVideo =
-                  (course.videoProvider === "blob" && course.videoBlobUrl) ||
-                  (course.videoProvider === "youtube" && course.videoYoutubeId);
-                return (
-                  <li key={course.id}>
-                    <Link
-                      href={`/admin/courses/${course.id}`}
-                      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 transition-colors hover:bg-muted/50"
-                    >
-                      <span className="font-medium">{course.name}</span>
-                      <div className="flex shrink-0 items-center gap-2">
-                        {course.nrCode && (
-                          <Badge variant="outline">{course.nrCode}</Badge>
-                        )}
-                        {!course.isActive && (
-                          <Badge variant="outline">Inativo</Badge>
-                        )}
-                        {hasVideo ? (
-                          <Video className="size-4 text-muted-foreground" />
-                        ) : (
-                          <VideoOff className="size-4 text-muted-foreground" />
-                        )}
-                        <ArrowUpRight className="size-4 text-muted-foreground" />
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </CardContent>
+        <CoursesList courses={list} />
       </Card>
     </div>
   );
