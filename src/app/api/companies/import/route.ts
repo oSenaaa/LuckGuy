@@ -70,14 +70,17 @@ export async function POST(request: Request) {
     reason: e.reason,
   }));
   const toInsert: ParsedCompanyRow[] = [];
-  const seenInFile = new Set<string>();
 
   for (const row of parsed.rows) {
-    if (existingDocuments.has(row.document) || seenInFile.has(row.document)) {
-      skipped.push({ rowNumber: row.rowNumber, reason: "CNPJ/CPF já cadastrado." });
+    if (existingDocuments.has(row.document)) {
+      const linesLabel =
+        row.sourceRows.length > 1 ? ` (linhas ${row.sourceRows.join(", ")})` : "";
+      skipped.push({
+        rowNumber: row.rowNumber,
+        reason: `CNPJ/CPF já cadastrado.${linesLabel}`,
+      });
       continue;
     }
-    seenInFile.add(row.document);
     toInsert.push(row);
   }
 
@@ -109,7 +112,12 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     createdCount,
-    createdCompanies: toInsert.map((row) => ({ name: row.name, cnpj: row.document })),
+    createdCompanies: toInsert.map((row) => ({
+      name: row.name,
+      cnpj: row.document,
+      workplaceCount: row.workplaces.length,
+      sourceRows: row.sourceRows,
+    })),
     skipped: skipped.sort((a, b) => a.rowNumber - b.rowNumber),
   });
 }

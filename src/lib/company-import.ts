@@ -37,12 +37,40 @@ const REQUIRED_FIELDS: CompanyImportField[] = ["name", "document"];
 
 export type ParsedCompanyRow = {
   rowNumber: number;
+  /** Todas as linhas da planilha com o mesmo CNPJ/CPF (mescladas nesta entrada). */
+  sourceRows: number[];
   name: string;
   document: string;
   email: string | null;
   phone: string | null;
   workplaces: string[];
 };
+
+/**
+ * Várias linhas com o mesmo CNPJ/CPF viram uma única empresa: os postos de
+ * trabalho de todas elas são combinados (sem duplicar), e nome/e-mail/
+ * telefone usam a primeira linha em que aparecem. Preserva a ordem de
+ * primeira aparição de cada CNPJ/CPF.
+ */
+function mergeRowsByDocument(rows: ParsedCompanyRow[]): ParsedCompanyRow[] {
+  const order: string[] = [];
+  const byDocument = new Map<string, ParsedCompanyRow>();
+
+  for (const row of rows) {
+    const existing = byDocument.get(row.document);
+    if (!existing) {
+      byDocument.set(row.document, { ...row, sourceRows: [row.rowNumber] });
+      order.push(row.document);
+      continue;
+    }
+    existing.sourceRows.push(row.rowNumber);
+    existing.workplaces = [...new Set([...existing.workplaces, ...row.workplaces])];
+    existing.email ??= row.email;
+    existing.phone ??= row.phone;
+  }
+
+  return order.map((document) => byDocument.get(document)!);
+}
 
 export type CompanyImportRowError = { rowNumber: number; reason: string };
 
@@ -63,6 +91,9 @@ export async function buildCompanyImportTemplate() {
     "11999999999",
     "Obra Alfa - Setor Administrativo, Obra Beta",
   ]);
+  // Mesmo CNPJ da linha acima, repetido: vira o mesmo cadastro de empresa,
+  // só adicionando mais um posto de trabalho a ela.
+  sheet.addRow(["Construtora Alfa Ltda", "12345678000195", "", "", "Obra Gama"]);
 
   sheet.columns = [
     { width: 32 },
@@ -180,6 +211,7 @@ export async function parseCompanyImportWorkbook(
 
     rows.push({
       rowNumber,
+      sourceRows: [rowNumber],
       name,
       document,
       email: emailRaw || null,
@@ -188,5 +220,5 @@ export async function parseCompanyImportWorkbook(
     });
   }
 
-  return { ok: true, rows, rowErrors };
+  return { ok: true, rows: mergeRowsByDocument(rows), rowErrors };
 }

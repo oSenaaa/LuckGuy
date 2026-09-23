@@ -18,7 +18,12 @@ import {
 
 type ImportReport = {
   createdCount: number;
-  createdCompanies: { name: string; cnpj: string }[];
+  createdCompanies: {
+    name: string;
+    cnpj: string;
+    workplaceCount: number;
+    sourceRows: number[];
+  }[];
   skipped: { rowNumber: number; reason: string }[];
 };
 
@@ -72,8 +77,9 @@ export function ImportCompaniesForm() {
       <CardHeader className="border-b">
         <CardTitle>Importar empresas via planilha</CardTitle>
         <CardDescription>
-          Baixe o modelo, preencha uma linha por empresa (postos de trabalho separados por
-          vírgula) e envie o arquivo preenchido.
+          Baixe o modelo, preencha uma linha por posto de trabalho (postos também podem ser
+          separados por vírgula numa mesma célula) e envie o arquivo preenchido. Linhas com o
+          mesmo CNPJ/CPF viram uma única empresa, com todos os postos vinculados a ela.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -111,6 +117,21 @@ export function ImportCompaniesForm() {
               {report.createdCount} empresa{report.createdCount === 1 ? "" : "s"} importada
               {report.createdCount === 1 ? "" : "s"}.
             </p>
+            {report.createdCompanies.some((c) => c.sourceRows.length > 1) && (
+              <div>
+                <p className="text-muted-foreground">Linhas combinadas na mesma empresa:</p>
+                <ul className="mt-1 max-h-40 list-disc space-y-0.5 overflow-y-auto pl-5 text-muted-foreground">
+                  {report.createdCompanies
+                    .filter((c) => c.sourceRows.length > 1)
+                    .map((c) => (
+                      <li key={c.cnpj}>
+                        {c.name}: linhas {c.sourceRows.join(", ")} ({c.workplaceCount} posto
+                        {c.workplaceCount === 1 ? "" : "s"})
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
             {report.skipped.length > 0 && (
               <div>
                 <p className="text-muted-foreground">

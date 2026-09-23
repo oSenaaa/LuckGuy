@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { companies, companyWorkplaces } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/require-admin";
@@ -49,6 +49,13 @@ export async function createCompany(formData: FormData) {
   const phoneError = validatePhone(phoneCountry, phoneNational);
   if (phoneError) throw new Error(phoneError);
 
+  const [existing] = await getDb()
+    .select({ id: companies.id })
+    .from(companies)
+    .where(eq(companies.cnpj, document))
+    .limit(1);
+  if (existing) throw new Error("Já existe uma empresa cadastrada com esse CNPJ/CPF");
+
   await getDb().insert(companies).values({
     name,
     cnpj: document,
@@ -72,6 +79,15 @@ export async function updateCompany(id: string, formData: FormData) {
   if (documentError) return { ok: false as const, error: documentError };
   const phoneError = validatePhone(phoneCountry, phoneNational);
   if (phoneError) return { ok: false as const, error: phoneError };
+
+  const [existing] = await getDb()
+    .select({ id: companies.id })
+    .from(companies)
+    .where(and(eq(companies.cnpj, document), ne(companies.id, id)))
+    .limit(1);
+  if (existing) {
+    return { ok: false as const, error: "Já existe uma empresa cadastrada com esse CNPJ/CPF." };
+  }
 
   await getDb()
     .update(companies)
