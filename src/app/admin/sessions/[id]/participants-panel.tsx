@@ -137,7 +137,12 @@ export function ParticipantsPanel({
                   </TableCell>
                   <TableCell className="font-medium">{p.fullName}</TableCell>
                   <TableCell className="text-muted-foreground">{p.phone}</TableCell>
-                  <TableCell className="text-muted-foreground">{p.companyName ?? "—"}</TableCell>
+                  <TableCell
+                    className="max-w-40 truncate text-muted-foreground"
+                    title={p.companyName ?? undefined}
+                  >
+                    {p.companyName ?? "—"}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{p.workplaceName ?? "—"}</TableCell>
                   <TableCell className="text-right tabular-nums">
                     {p.watchedPercent ? Number(p.watchedPercent).toFixed(0) : 0}%
