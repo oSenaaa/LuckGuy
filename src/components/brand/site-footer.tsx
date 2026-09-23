@@ -7,10 +7,10 @@ import { LiderLogo } from "./logo";
 
 export function SiteFooter() {
   const pathname = usePathname();
-  // O colaborador assistindo ao treinamento não deve ver links de navegação
-  // (nem para a home, nem para a área administrativa) — só a tela do vídeo.
-  // Mesmo padrão de rota usado em SiteHeader para esconder o botão de admin.
-  const isWatchPage = /^\/t\/[^/]+\/assistir\/?$/.test(pathname ?? "");
+  // O colaborador identificando-se ou assistindo ao treinamento não deve ver
+  // links de navegação (nem para a home, nem para a área administrativa) —
+  // só a tela de identificação/vídeo. Mesmo padrão de rota do SiteHeader.
+  const isParticipantArea = /^\/t\//.test(pathname ?? "");
 
   return (
     <footer className="border-t bg-muted/40">
@@ -22,7 +22,7 @@ export function SiteFooter() {
             Regulamentadoras (NR).
           </p>
         </div>
-        {!isWatchPage && (
+        {!isParticipantArea && (
           <nav className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
             <Link href="/" className="transition-colors hover:text-foreground">
               Início

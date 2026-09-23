@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const isWatchPage = /^\/t\/[^/]+\/assistir\/?$/.test(pathname ?? "");
+  // O colaborador identificando-se ou assistindo ao treinamento não deve ver
+  // caminho pra área administrativa — só a tela de identificação/vídeo.
+  const isParticipantArea = /^\/t\//.test(pathname ?? "");
 
   return (
     <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/70">
@@ -18,7 +20,7 @@ export function SiteHeader() {
         <LiderLogo variant="full" size="sm" href="/" />
         <div className="flex items-center gap-1">
           <ThemeToggle />
-          {!isWatchPage && (
+          {!isParticipantArea && (
             <Button asChild variant="outline" size="sm">
               <Link href="/admin">
                 <ShieldCheck />
