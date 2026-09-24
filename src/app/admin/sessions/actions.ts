@@ -14,11 +14,8 @@ import {
 } from "@/lib/db/schema";
 import { generateAccessSlug, generateAccessPin } from "@/lib/access-slug";
 import { CertificateError, issueCertificate } from "@/lib/certificate/issue";
+import { parseBrasiliaDateTime } from "@/lib/datetime";
 import { requireAdmin } from "@/lib/require-admin";
-
-function parseBrasiliaDateTime(value: string) {
-  return value ? new Date(`${value}-03:00`) : null;
-}
 
 export async function createSession(formData: FormData) {
   const { userId } = await requireAdmin();
@@ -124,6 +121,26 @@ export async function archiveSession(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   await getDb().update(courseSessions).set({ status: "archived" }).where(eq(courseSessions.id, id));
   revalidatePath(`/admin/sessions/${id}`);
+}
+
+export async function updateSessionPeriod(id: string, formData: FormData) {
+  await requireAdmin();
+  if (!id) return { ok: false as const, error: "Turma inválida." };
+
+  const startsAt = parseBrasiliaDateTime(String(formData.get("startsAt") ?? ""));
+  const endsAt = parseBrasiliaDateTime(String(formData.get("endsAt") ?? ""));
+
+  if (startsAt && endsAt && endsAt <= startsAt) {
+    return { ok: false as const, error: "A data de fim deve ser depois da data de início." };
+  }
+
+  await getDb()
+    .update(courseSessions)
+    .set({ startsAt, endsAt, updatedAt: new Date() })
+    .where(eq(courseSessions.id, id));
+
+  revalidatePath(`/admin/sessions/${id}`);
+  return { ok: true as const };
 }
 
 export async function reissueCertificate(participantId: string, sessionId: string) {

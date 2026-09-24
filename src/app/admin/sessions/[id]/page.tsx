@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { and, eq, isNull } from "drizzle-orm";
 import {
   Archive,
-  CalendarRange,
   ExternalLink,
   FileSpreadsheet,
   Send,
@@ -24,6 +23,7 @@ import {
 } from "@/lib/db/schema";
 import { archiveSession, publishSession } from "../actions";
 import { ParticipantsPanel } from "./participants-panel";
+import { SessionPeriodPanel } from "./session-period-panel";
 import { formatWorkload, resolveWorkloadHours } from "@/lib/workload";
 import { archiveExpiredSessions, getCompanyNamesBySessionId } from "@/lib/sessions";
 import { PageHeader } from "@/components/admin/page-header";
@@ -113,13 +113,6 @@ export default async function SessionDetailPage({
     ? `${Math.round(session.videoDurationSeconds / 60)} min`
     : null;
 
-  const formatBrasiliaDateTime = (date: Date) =>
-    new Intl.DateTimeFormat("pt-BR", {
-      dateStyle: "short",
-      timeStyle: "short",
-      timeZone: "America/Sao_Paulo",
-    }).format(date);
-
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
       <PageHeader
@@ -131,34 +124,12 @@ export default async function SessionDetailPage({
       </PageHeader>
 
       <Card>
-        <CardHeader className="border-b">
-          <CardTitle className="flex items-center gap-2">
-            <CalendarRange className="size-4 text-muted-foreground" />
-            Período da turma
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-xs text-muted-foreground">Início</p>
-            <p className="font-medium">
-              {session.startsAt ? (
-                formatBrasiliaDateTime(session.startsAt)
-              ) : (
-                <span className="text-muted-foreground">Sem data definida</span>
-              )}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Fim</p>
-            <p className="font-medium">
-              {session.endsAt ? (
-                formatBrasiliaDateTime(session.endsAt)
-              ) : (
-                <span className="text-muted-foreground">Sem data definida</span>
-              )}
-            </p>
-          </div>
-        </CardContent>
+        <SessionPeriodPanel
+          sessionId={session.id}
+          status={session.status}
+          startsAt={session.startsAt}
+          endsAt={session.endsAt}
+        />
       </Card>
 
       <Card>
