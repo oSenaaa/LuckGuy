@@ -99,7 +99,7 @@ export async function publishSession(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const db = getDb();
   const [session] = await db
-    .select({ course: courses })
+    .select({ course: courses, endsAt: courseSessions.endsAt })
     .from(courseSessions)
     .innerJoin(courses, eq(courses.id, courseSessions.courseId))
     .where(eq(courseSessions.id, id))
@@ -110,6 +110,20 @@ export async function publishSession(formData: FormData) {
     (course?.videoProvider === "youtube" && course.videoYoutubeId);
   if (!hasVideo || !course?.videoDurationSeconds) {
     throw new Error("Envie o vídeo do treinamento antes de publicar a turma");
+  }
+
+  // A varredura de expiração (archiveExpiredSessions) arquiva de novo, na
+  // próxima carga de página, qualquer turma publicada cujo fim já passou —
+  // publicar sem corrigir o período antes teria efeito nenhum na prática.
+  if (session?.endsAt && session.endsAt <= new Date()) {
+    const endsAtLabel = new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+      timeZone: "America/Sao_Paulo",
+    }).format(session.endsAt);
+    throw new Error(
+      `Esta turma já passou da data de fim (${endsAtLabel}). Edite o período antes de publicar.`,
+    );
   }
 
   await db.update(courseSessions).set({ status: "published" }).where(eq(courseSessions.id, id));
