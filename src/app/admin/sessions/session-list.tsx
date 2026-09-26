@@ -166,57 +166,101 @@ export function SessionList({
         </Select>
       </div>
 
-      <div className="rounded-lg border border-border">
-        {sessions.length === 0 ? (
+      {sessions.length === 0 ? (
+        <div className="rounded-lg border border-border">
           <EmptyState title="Nenhuma turma criada ainda." canEdit={canEdit} />
-        ) : filtered.length === 0 ? (
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-lg border border-border">
           <p className="px-4 py-16 text-center text-sm text-muted-foreground">
             Nenhuma turma encontrada para esses filtros.
           </p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className={HEAD_CLASS}>Turma</TableHead>
-                <TableHead className={HEAD_CLASS}>Treinamento</TableHead>
-                <TableHead className={HEAD_CLASS}>Empresa</TableHead>
-                <TableHead className={HEAD_CLASS}>Data</TableHead>
-                <TableHead className={HEAD_CLASS}>Participantes</TableHead>
-                <TableHead className={HEAD_CLASS}>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((session) => (
-                <TableRow key={session.id}>
-                  <TableCell>
-                    <Link
-                      href={`/admin/sessions/${session.id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {session.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{session.courseName}</TableCell>
-                  <TableCell className="max-w-56 truncate text-muted-foreground">
-                    {session.companies.length > 0
-                      ? session.companies.map((company) => company.name).join(", ")
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="tabular-nums text-muted-foreground">
-                    {formatSessionDate(session.startsAt, session.endsAt)}
-                  </TableCell>
-                  <TableCell className="tabular-nums text-muted-foreground">
-                    {session.participantCount}
-                  </TableCell>
-                  <TableCell>
-                    <SessionStatusBadge status={session.status} />
-                  </TableCell>
+        </div>
+      ) : (
+        <>
+          <ul className="grid gap-3 sm:hidden">
+            {filtered.map((session) => (
+              <li key={session.id} className="rounded-lg border border-border p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <Link
+                    href={`/admin/sessions/${session.id}`}
+                    className="font-medium hover:underline"
+                  >
+                    {session.name}
+                  </Link>
+                  <SessionStatusBadge status={session.status} />
+                </div>
+                <dl className="mt-3 space-y-1.5 text-sm">
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Treinamento</dt>
+                    <dd className="truncate">{session.courseName}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Empresa</dt>
+                    <dd className="truncate">
+                      {session.companies.length > 0
+                        ? session.companies.map((company) => company.name).join(", ")
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Data</dt>
+                    <dd className="tabular-nums">{formatSessionDate(session.startsAt, session.endsAt)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Participantes</dt>
+                    <dd className="tabular-nums">{session.participantCount}</dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+
+          <div className="hidden rounded-lg border border-border sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className={HEAD_CLASS}>Turma</TableHead>
+                  <TableHead className={HEAD_CLASS}>Treinamento</TableHead>
+                  <TableHead className={HEAD_CLASS}>Empresa</TableHead>
+                  <TableHead className={HEAD_CLASS}>Data</TableHead>
+                  <TableHead className={HEAD_CLASS}>Participantes</TableHead>
+                  <TableHead className={HEAD_CLASS}>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((session) => (
+                  <TableRow key={session.id}>
+                    <TableCell>
+                      <Link
+                        href={`/admin/sessions/${session.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {session.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{session.courseName}</TableCell>
+                    <TableCell className="max-w-56 truncate text-muted-foreground">
+                      {session.companies.length > 0
+                        ? session.companies.map((company) => company.name).join(", ")
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-muted-foreground">
+                      {formatSessionDate(session.startsAt, session.endsAt)}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-muted-foreground">
+                      {session.participantCount}
+                    </TableCell>
+                    <TableCell>
+                      <SessionStatusBadge status={session.status} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      )}
     </div>
   );
 }

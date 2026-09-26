@@ -81,7 +81,7 @@ export function CompanyFormSheet({
         }
       }}
     >
-      <SheetContent className="sm:max-w-[480px]">
+      <SheetContent className="w-full sm:max-w-[480px]">
         <SheetHeader>
           <SheetTitle>{isEdit ? `Editar ${company?.name}` : "Nova empresa"}</SheetTitle>
           <SheetDescription>

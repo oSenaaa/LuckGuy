@@ -105,77 +105,132 @@ export function CourseList({
         />
       </div>
 
-      <div className="rounded-lg border border-border">
-        {courses.length === 0 ? (
+      {courses.length === 0 ? (
+        <div className="rounded-lg border border-border">
           <EmptyState
             title="Nenhum treinamento cadastrado."
             canEdit={canEdit}
             onCreateClick={onCreateClick}
           />
-        ) : filtered.length === 0 ? (
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-lg border border-border">
           <p className="px-4 py-16 text-center text-sm text-muted-foreground">
             Nenhum treinamento encontrado para essa busca.
           </p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className={HEAD_CLASS}>Nome</TableHead>
-                <TableHead className={HEAD_CLASS}>Código NR</TableHead>
-                <TableHead className={HEAD_CLASS}>Duração</TableHead>
-                <TableHead className={HEAD_CLASS}>Vídeo</TableHead>
-                <TableHead className={HEAD_CLASS}>Status</TableHead>
-                <TableHead className={cn(HEAD_CLASS, "w-10")}>
-                  <span className="sr-only">Ações</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((course) => {
-                const hasVideo =
-                  (course.videoProvider === "blob" && Boolean(course.videoBlobUrl)) ||
-                  (course.videoProvider === "youtube" && Boolean(course.videoYoutubeId));
+        </div>
+      ) : (
+        <>
+          <ul className="grid gap-3 sm:hidden">
+            {filtered.map((course) => {
+              const hasVideo =
+                (course.videoProvider === "blob" && Boolean(course.videoBlobUrl)) ||
+                (course.videoProvider === "youtube" && Boolean(course.videoYoutubeId));
 
-                return (
-                  <TableRow key={course.id}>
-                    <TableCell>
-                      <Link
-                        href={`/admin/courses/${course.id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {course.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {course.nrCode ?? "—"}
-                    </TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">
-                      {formatDuration(course.defaultDurationMinutes)}
-                    </TableCell>
-                    <TableCell>
-                      {hasVideo ? (
-                        <VideoCamera size={16} className="text-muted-foreground" />
-                      ) : (
-                        <VideoCameraSlash size={16} className="text-muted-foreground" />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {course.isActive ? (
-                        <StatusBadge status="active">Ativo</StatusBadge>
-                      ) : (
-                        <StatusBadge status="draft">Inativo</StatusBadge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {canEdit && <CourseRowActions course={course} />}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+              return (
+                <li key={course.id} className="rounded-lg border border-border p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <Link
+                      href={`/admin/courses/${course.id}`}
+                      className="font-medium hover:underline"
+                    >
+                      {course.name}
+                    </Link>
+                    {canEdit && <CourseRowActions course={course} />}
+                  </div>
+                  <dl className="mt-3 space-y-1.5 text-sm">
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Código NR</dt>
+                      <dd>{course.nrCode ?? "—"}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Duração</dt>
+                      <dd className="tabular-nums">{formatDuration(course.defaultDurationMinutes)}</dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="text-muted-foreground">Vídeo</dt>
+                      <dd>
+                        {hasVideo ? (
+                          <VideoCamera size={16} className="text-muted-foreground" />
+                        ) : (
+                          <VideoCameraSlash size={16} className="text-muted-foreground" />
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="mt-3">
+                    {course.isActive ? (
+                      <StatusBadge status="active">Ativo</StatusBadge>
+                    ) : (
+                      <StatusBadge status="draft">Inativo</StatusBadge>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="hidden rounded-lg border border-border sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className={HEAD_CLASS}>Nome</TableHead>
+                  <TableHead className={HEAD_CLASS}>Código NR</TableHead>
+                  <TableHead className={HEAD_CLASS}>Duração</TableHead>
+                  <TableHead className={HEAD_CLASS}>Vídeo</TableHead>
+                  <TableHead className={HEAD_CLASS}>Status</TableHead>
+                  <TableHead className={cn(HEAD_CLASS, "w-10")}>
+                    <span className="sr-only">Ações</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((course) => {
+                  const hasVideo =
+                    (course.videoProvider === "blob" && Boolean(course.videoBlobUrl)) ||
+                    (course.videoProvider === "youtube" && Boolean(course.videoYoutubeId));
+
+                  return (
+                    <TableRow key={course.id}>
+                      <TableCell>
+                        <Link
+                          href={`/admin/courses/${course.id}`}
+                          className="font-medium hover:underline"
+                        >
+                          {course.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {course.nrCode ?? "—"}
+                      </TableCell>
+                      <TableCell className="tabular-nums text-muted-foreground">
+                        {formatDuration(course.defaultDurationMinutes)}
+                      </TableCell>
+                      <TableCell>
+                        {hasVideo ? (
+                          <VideoCamera size={16} className="text-muted-foreground" />
+                        ) : (
+                          <VideoCameraSlash size={16} className="text-muted-foreground" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {course.isActive ? (
+                          <StatusBadge status="active">Ativo</StatusBadge>
+                        ) : (
+                          <StatusBadge status="draft">Inativo</StatusBadge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {canEdit && <CourseRowActions course={course} />}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -32,7 +32,7 @@ export function CompaniesView({
         description="Cadastre as empresas que contratam os treinamentos."
       >
         {canEdit && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">

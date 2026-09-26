@@ -98,7 +98,7 @@ export function CourseFormSheet({
         }
       }}
     >
-      <SheetContent className="sm:max-w-[480px]">
+      <SheetContent className="w-full sm:max-w-[480px]">
         <SheetHeader>
           <SheetTitle>{isEdit ? `Editar ${course?.name}` : "Novo treinamento"}</SheetTitle>
           <SheetDescription>

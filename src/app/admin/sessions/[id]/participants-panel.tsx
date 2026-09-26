@@ -104,80 +104,154 @@ export function ParticipantsPanel({
             <CopyButton value={publicUrl} label="Copiar link de acesso" />
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
-                  {canEdit && withCertificate.length > 0 && (
-                    <Checkbox
-                      checked={allSelected}
-                      onCheckedChange={toggleAll}
-                      aria-label="Selecionar todos os participantes com certificado"
-                    />
-                  )}
-                </TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Empresa</TableHead>
-                <TableHead>Posto de trabalho</TableHead>
-                <TableHead className="text-right">% assistido</TableHead>
-                <TableHead>Assinatura</TableHead>
-                <TableHead className="sticky right-0 z-10 border-l bg-background text-right">
-                  Certificado
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {participants.map((p) => (
-                <TableRow key={p.id} className="group">
-                  <TableCell>
-                    {canEdit && p.certificateUrl && (
-                      <Checkbox
-                        checked={selected.has(p.id)}
-                        onCheckedChange={() => toggleOne(p.id)}
-                        aria-label={`Selecionar ${p.fullName}`}
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{p.fullName}</TableCell>
-                  <TableCell className="text-muted-foreground">{p.phone}</TableCell>
-                  <TableCell
-                    className="max-w-40 truncate text-muted-foreground"
-                    title={p.companyName ?? undefined}
-                  >
-                    {p.companyName ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{p.workplaceName ?? "—"}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {p.watchedPercent ? Number(p.watchedPercent).toFixed(0) : 0}%
-                  </TableCell>
-                  <TableCell>
-                    {p.certificateUrl ? (
-                      <StatusBadge status="active">Assinado</StatusBadge>
-                    ) : (
-                      <StatusBadge status="pending">Pendente de assinatura</StatusBadge>
-                    )}
-                  </TableCell>
-                  <TableCell className="sticky right-0 border-l bg-background group-hover:bg-muted/50">
-                    {p.certificateUrl ? (
-                      <div className="flex items-center justify-end gap-1">
-                        <Button asChild variant="ghost" size="icon-sm" aria-label="Baixar certificado" title="Baixar certificado">
+          <>
+            <div className="sm:hidden">
+              {canEdit && withCertificate.length > 0 && (
+                <label className="flex items-center gap-2 border-b px-4 py-3 text-sm text-muted-foreground">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={toggleAll}
+                    aria-label="Selecionar todos os participantes com certificado"
+                  />
+                  Selecionar todos com certificado
+                </label>
+              )}
+              <ul className="divide-y divide-border">
+                {participants.map((p) => (
+                  <li key={p.id} className="px-4 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-2">
+                        {canEdit && p.certificateUrl && (
+                          <Checkbox
+                            className="mt-0.5"
+                            checked={selected.has(p.id)}
+                            onCheckedChange={() => toggleOne(p.id)}
+                            aria-label={`Selecionar ${p.fullName}`}
+                          />
+                        )}
+                        <span className="font-medium">{p.fullName}</span>
+                      </div>
+                      {p.certificateUrl ? (
+                        <StatusBadge status="active">Assinado</StatusBadge>
+                      ) : (
+                        <StatusBadge status="pending">Pendente</StatusBadge>
+                      )}
+                    </div>
+                    <dl className="mt-3 space-y-1.5 text-sm">
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-muted-foreground">Telefone</dt>
+                        <dd>{p.phone}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-muted-foreground">Empresa</dt>
+                        <dd className="truncate">{p.companyName ?? "—"}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-muted-foreground">Posto de trabalho</dt>
+                        <dd className="truncate">{p.workplaceName ?? "—"}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-muted-foreground">% assistido</dt>
+                        <dd className="tabular-nums">
+                          {p.watchedPercent ? Number(p.watchedPercent).toFixed(0) : 0}%
+                        </dd>
+                      </div>
+                    </dl>
+                    {p.certificateUrl && (
+                      <div className="mt-3 flex items-center gap-2">
+                        <Button asChild variant="outline" size="sm">
                           <Link href={p.certificateUrl} target="_blank">
-                            <DownloadSimple size={20} />
+                            <DownloadSimple size={16} />
+                            Baixar certificado
                           </Link>
                         </Button>
                         {canEdit && (
                           <ReissueCertificateButton participantId={p.id} sessionId={sessionId} />
                         )}
                       </div>
-                    ) : (
-                      <span className="block text-right text-muted-foreground">—</span>
                     )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="hidden sm:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      {canEdit && withCertificate.length > 0 && (
+                        <Checkbox
+                          checked={allSelected}
+                          onCheckedChange={toggleAll}
+                          aria-label="Selecionar todos os participantes com certificado"
+                        />
+                      )}
+                    </TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Empresa</TableHead>
+                    <TableHead>Posto de trabalho</TableHead>
+                    <TableHead className="text-right">% assistido</TableHead>
+                    <TableHead>Assinatura</TableHead>
+                    <TableHead className="sticky right-0 z-10 border-l bg-background text-right">
+                      Certificado
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {participants.map((p) => (
+                    <TableRow key={p.id} className="group">
+                      <TableCell>
+                        {canEdit && p.certificateUrl && (
+                          <Checkbox
+                            checked={selected.has(p.id)}
+                            onCheckedChange={() => toggleOne(p.id)}
+                            aria-label={`Selecionar ${p.fullName}`}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium">{p.fullName}</TableCell>
+                      <TableCell className="text-muted-foreground">{p.phone}</TableCell>
+                      <TableCell
+                        className="max-w-40 truncate text-muted-foreground"
+                        title={p.companyName ?? undefined}
+                      >
+                        {p.companyName ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{p.workplaceName ?? "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {p.watchedPercent ? Number(p.watchedPercent).toFixed(0) : 0}%
+                      </TableCell>
+                      <TableCell>
+                        {p.certificateUrl ? (
+                          <StatusBadge status="active">Assinado</StatusBadge>
+                        ) : (
+                          <StatusBadge status="pending">Pendente de assinatura</StatusBadge>
+                        )}
+                      </TableCell>
+                      <TableCell className="sticky right-0 border-l bg-background group-hover:bg-muted/50">
+                        {p.certificateUrl ? (
+                          <div className="flex items-center justify-end gap-1">
+                            <Button asChild variant="ghost" size="icon-sm" aria-label="Baixar certificado" title="Baixar certificado">
+                              <Link href={p.certificateUrl} target="_blank">
+                                <DownloadSimple size={20} />
+                              </Link>
+                            </Button>
+                            {canEdit && (
+                              <ReissueCertificateButton participantId={p.id} sessionId={sessionId} />
+                            )}
+                          </div>
+                        ) : (
+                          <span className="block text-right text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </CardContent>
     </>

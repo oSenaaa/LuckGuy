@@ -98,72 +98,120 @@ export function CompanyList({
         />
       </div>
 
-      <div className="rounded-lg border border-border">
-        {companies.length === 0 ? (
+      {companies.length === 0 ? (
+        <div className="rounded-lg border border-border">
           <EmptyState
             title="Nenhuma empresa cadastrada."
             canEdit={canEdit}
             onCreateClick={onCreateClick}
           />
-        ) : filtered.length === 0 ? (
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-lg border border-border">
           <p className="px-4 py-16 text-center text-sm text-muted-foreground">
             Nenhuma empresa encontrada para essa busca.
           </p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className={HEAD_CLASS}>Nome</TableHead>
-                <TableHead className={HEAD_CLASS}>CNPJ/CPF</TableHead>
-                <TableHead className={HEAD_CLASS}>Contato</TableHead>
-                <TableHead className={HEAD_CLASS}>Status</TableHead>
-                <TableHead className={cn(HEAD_CLASS, "w-10")}>
-                  <span className="sr-only">Ações</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((company) => (
-                <TableRow key={company.id}>
-                  <TableCell>
-                    <Link
-                      href={`/admin/companies/${company.id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {company.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="tabular-nums text-muted-foreground">
-                    {company.cnpj ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {company.contactEmail ?? company.contactPhone ?? "—"}
-                  </TableCell>
-                  <TableCell>
-                    {company.archivedAt ? (
-                      <StatusBadge status="ended">Arquivada</StatusBadge>
-                    ) : (
-                      <StatusBadge status="active">Ativa</StatusBadge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {canEdit && (
-                      <CompanyRowActions
-                        id={company.id}
-                        name={company.name}
-                        cnpj={company.cnpj}
-                        contactEmail={company.contactEmail}
-                        contactPhone={company.contactPhone}
-                        isArchived={Boolean(company.archivedAt)}
-                      />
-                    )}
-                  </TableCell>
+        </div>
+      ) : (
+        <>
+          <ul className="grid gap-3 sm:hidden">
+            {filtered.map((company) => (
+              <li key={company.id} className="rounded-lg border border-border p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <Link
+                    href={`/admin/companies/${company.id}`}
+                    className="font-medium hover:underline"
+                  >
+                    {company.name}
+                  </Link>
+                  {canEdit && (
+                    <CompanyRowActions
+                      id={company.id}
+                      name={company.name}
+                      cnpj={company.cnpj}
+                      contactEmail={company.contactEmail}
+                      contactPhone={company.contactPhone}
+                      isArchived={Boolean(company.archivedAt)}
+                    />
+                  )}
+                </div>
+                <dl className="mt-3 space-y-1.5 text-sm">
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">CNPJ/CPF</dt>
+                    <dd className="tabular-nums">{company.cnpj ?? "—"}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Contato</dt>
+                    <dd className="truncate">{company.contactEmail ?? company.contactPhone ?? "—"}</dd>
+                  </div>
+                </dl>
+                <div className="mt-3">
+                  {company.archivedAt ? (
+                    <StatusBadge status="ended">Arquivada</StatusBadge>
+                  ) : (
+                    <StatusBadge status="active">Ativa</StatusBadge>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="hidden rounded-lg border border-border sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className={HEAD_CLASS}>Nome</TableHead>
+                  <TableHead className={HEAD_CLASS}>CNPJ/CPF</TableHead>
+                  <TableHead className={HEAD_CLASS}>Contato</TableHead>
+                  <TableHead className={HEAD_CLASS}>Status</TableHead>
+                  <TableHead className={cn(HEAD_CLASS, "w-10")}>
+                    <span className="sr-only">Ações</span>
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((company) => (
+                  <TableRow key={company.id}>
+                    <TableCell>
+                      <Link
+                        href={`/admin/companies/${company.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {company.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="tabular-nums text-muted-foreground">
+                      {company.cnpj ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {company.contactEmail ?? company.contactPhone ?? "—"}
+                    </TableCell>
+                    <TableCell>
+                      {company.archivedAt ? (
+                        <StatusBadge status="ended">Arquivada</StatusBadge>
+                      ) : (
+                        <StatusBadge status="active">Ativa</StatusBadge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {canEdit && (
+                        <CompanyRowActions
+                          id={company.id}
+                          name={company.name}
+                          cnpj={company.cnpj}
+                          contactEmail={company.contactEmail}
+                          contactPhone={company.contactPhone}
+                          isArchived={Boolean(company.archivedAt)}
+                        />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      )}
     </div>
   );
 }
