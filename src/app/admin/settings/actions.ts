@@ -17,9 +17,9 @@ export async function inviteUser(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const role = readRole(formData.get("role"));
 
-  if (!name) throw new Error("Nome é obrigatório");
-  if (!email) throw new Error("E-mail é obrigatório");
-  if (!role) throw new Error("Selecione um nível de permissão");
+  if (!name) return { ok: false as const, error: "Nome é obrigatório." };
+  if (!email) return { ok: false as const, error: "E-mail é obrigatório." };
+  if (!role) return { ok: false as const, error: "Selecione um nível de permissão." };
 
   const client = await clerkClient();
   try {
@@ -28,12 +28,15 @@ export async function inviteUser(formData: FormData) {
       publicMetadata: { role, name },
     });
   } catch {
-    throw new Error(
-      "Não foi possível enviar o convite. Verifique se o e-mail já não tem conta ou convite pendente.",
-    );
+    return {
+      ok: false as const,
+      error:
+        "Não foi possível enviar o convite. Verifique se o e-mail já não tem conta ou convite pendente.",
+    };
   }
 
   revalidatePath("/admin/settings");
+  return { ok: true as const };
 }
 
 export async function updateUserRole(userId: string, formData: FormData) {

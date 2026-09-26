@@ -1,25 +1,15 @@
 import { redirect } from "next/navigation";
 import { clerkClient } from "@clerk/nextjs/server";
+import { Envelope, UsersThree } from "@phosphor-icons/react/dist/ssr";
 
 import { PageHeader } from "@/components/admin/page-header";
 import { UserRowActions } from "@/components/admin/settings/user-row-actions";
 import { InvitationRowActions } from "@/components/admin/settings/invitation-row-actions";
+import { InviteUserForm } from "./invite-user-form";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
-import { SubmitButton } from "@/components/ui/submit-button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getCurrentRole, isRole, ROLE_LABELS, type Role } from "@/lib/permissions";
-import { inviteUser } from "./actions";
+import { getCurrentRole, isRole, ROLE_LABELS } from "@/lib/permissions";
 
 export default async function SettingsPage() {
   const current = await getCurrentRole();
@@ -54,9 +44,10 @@ export default async function SettingsPage() {
             </CardHeader>
             <CardContent className="p-0">
               {users.length === 0 ? (
-                <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  Nenhum usuário encontrado.
-                </p>
+                <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+                  <UsersThree size={32} className="text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Nenhum usuário encontrado.</p>
+                </div>
               ) : (
                 <ul className="divide-y divide-border">
                   {users.map((user) => {
@@ -105,39 +96,7 @@ export default async function SettingsPage() {
                 aplicado assim que a pessoa aceitar o convite.
               </CardDescription>
             </CardHeader>
-            <form action={inviteUser}>
-              <CardContent>
-                <div className="grid gap-4 sm:grid-cols-[1fr_1fr_180px]">
-                  <div className="grid gap-2">
-                    <Label htmlFor="invite-name">Nome</Label>
-                    <Input id="invite-name" name="name" required placeholder="Nome completo" />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="invite-email">E-mail</Label>
-                    <Input
-                      id="invite-email"
-                      name="email"
-                      type="email"
-                      required
-                      placeholder="pessoa@empresa.com"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="invite-role">Permissão</Label>
-                    <NativeSelect id="invite-role" name="role" defaultValue="editor" required>
-                      {(Object.entries(ROLE_LABELS) as [Role, string][]).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </NativeSelect>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="justify-end">
-                <SubmitButton pendingText="Enviando…">Convidar</SubmitButton>
-              </CardFooter>
-            </form>
+            <InviteUserForm />
           </Card>
 
           <Card>
@@ -149,9 +108,10 @@ export default async function SettingsPage() {
             </CardHeader>
             <CardContent className="p-0">
               {invitations.length === 0 ? (
-                <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  Nenhum convite pendente.
-                </p>
+                <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+                  <Envelope size={32} className="text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Nenhum convite pendente.</p>
+                </div>
               ) : (
                 <ul className="divide-y divide-border">
                   {invitations.map((invitation) => {
