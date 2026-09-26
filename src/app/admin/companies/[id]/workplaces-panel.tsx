@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, CircleNotch, PencilSimple, Plus, TrayArrowUp } from "@phosphor-icons/react";
+import { Archive, Briefcase, CircleNotch, PencilSimple, Plus, TrayArrowUp } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import {
@@ -62,14 +62,18 @@ function WorkplaceRow({ workplace, canEdit }: { workplace: Workplace; canEdit: b
     try {
       const result = await updateWorkplace(workplace.id, new FormData(event.currentTarget));
       if (!result.ok) {
-        setEditError(result.error ?? "Não foi possível salvar.");
+        const message = result.error ?? "Não foi possível salvar.";
+        setEditError(message);
+        toast.error(message);
         return;
       }
       toast.success("Posto atualizado.");
       setEditOpen(false);
       router.refresh();
     } catch {
-      setEditError("Não foi possível salvar. Tente novamente.");
+      const message = "Não foi possível salvar. Tente novamente.";
+      setEditError(message);
+      toast.error(message);
     } finally {
       setEditPending(false);
     }
@@ -174,13 +178,18 @@ export function WorkplacesPanel({
     try {
       const result = await addWorkplace(companyId, new FormData(form));
       if (!result.ok) {
-        setAddError(result.error ?? "Não foi possível adicionar o posto.");
+        const message = result.error ?? "Não foi possível adicionar o posto.";
+        setAddError(message);
+        toast.error(message);
         return;
       }
+      toast.success("Posto adicionado.");
       form.reset();
       router.refresh();
     } catch {
-      setAddError("Não foi possível adicionar o posto. Tente novamente.");
+      const message = "Não foi possível adicionar o posto. Tente novamente.";
+      setAddError(message);
+      toast.error(message);
     } finally {
       setAdding(false);
     }
@@ -189,9 +198,10 @@ export function WorkplacesPanel({
   return (
     <>
       {active.length === 0 && archived.length === 0 ? (
-        <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-          Nenhum posto de trabalho cadastrado ainda.
-        </p>
+        <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+          <Briefcase size={32} className="text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Nenhum posto de trabalho cadastrado ainda.</p>
+        </div>
       ) : (
         <ul className="divide-y divide-border">
           {active.map((workplace) => (

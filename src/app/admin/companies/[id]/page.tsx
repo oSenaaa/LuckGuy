@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { Briefcase, EnvelopeSimple, Phone } from "@phosphor-icons/react/dist/ssr";
+import { Briefcase, EnvelopeSimple, Phone, Plus, UsersThree } from "@phosphor-icons/react/dist/ssr";
 
 import { getDb } from "@/lib/db";
 import {
@@ -21,6 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export default async function CompanyDetailPage({
@@ -126,9 +127,20 @@ export default async function CompanyDetailPage({
         </CardHeader>
         <CardContent className="p-0">
           {sessions.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Nenhuma turma cadastrada para esta empresa ainda.
-            </p>
+            <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
+              <UsersThree size={32} className="text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                Nenhuma turma cadastrada para esta empresa ainda.
+              </p>
+              {canEdit && (
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/admin/sessions/new">
+                    <Plus size={16} />
+                    Nova turma
+                  </Link>
+                </Button>
+              )}
+            </div>
           ) : (
             <ul className="divide-y divide-border">
               {sessions.map((session) => (

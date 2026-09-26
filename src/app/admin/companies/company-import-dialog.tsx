@@ -74,7 +74,9 @@ export function CompanyImportDialog({
       const res = await fetch("/api/companies/import", { method: "POST", body });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Não foi possível importar a planilha.");
+        const message = data.error ?? "Não foi possível importar a planilha.";
+        setError(message);
+        toast.error(message);
         return;
       }
       setReport(data);
@@ -86,7 +88,9 @@ export function CompanyImportDialog({
         router.refresh();
       }
     } catch {
-      setError("Não foi possível importar a planilha. Tente novamente.");
+      const message = "Não foi possível importar a planilha. Tente novamente.";
+      setError(message);
+      toast.error(message);
     } finally {
       setPending(false);
     }

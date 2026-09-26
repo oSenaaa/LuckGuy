@@ -54,14 +54,18 @@ export function CompanyFormSheet({
         ? await updateCompany(company.id, formData)
         : await createCompany(formData);
       if (!result.ok) {
-        setError(result.error ?? "Não foi possível salvar.");
+        const message = result.error ?? "Não foi possível salvar.";
+        setError(message);
+        toast.error(message);
         return;
       }
       toast.success(isEdit ? "Empresa atualizada." : "Empresa adicionada.");
       onOpenChange(false);
       router.refresh();
     } catch {
-      setError("Não foi possível salvar. Tente novamente.");
+      const message = "Não foi possível salvar. Tente novamente.";
+      setError(message);
+      toast.error(message);
     } finally {
       setPending(false);
     }
