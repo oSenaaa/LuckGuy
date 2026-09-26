@@ -33,6 +33,7 @@ export async function POST(request: Request) {
   }
 
   const formData = await request.formData();
+  const preview = formData.get("preview") === "true";
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return NextResponse.json({ error: "Selecione um arquivo .xlsx." }, { status: 400 });
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
   }
 
   let createdCount = 0;
-  if (toInsert.length > 0) {
+  if (!preview && toInsert.length > 0) {
     const batch: BatchItem<"pg">[] = [];
     for (const row of toInsert) {
       const companyId = crypto.randomUUID();
@@ -106,11 +107,14 @@ export async function POST(request: Request) {
     }
     await db.batch(batch as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
     createdCount = toInsert.length;
+  } else if (preview) {
+    createdCount = toInsert.length;
   }
 
-  revalidatePath("/admin/companies");
+  if (!preview) revalidatePath("/admin/companies");
 
   return NextResponse.json({
+    preview,
     createdCount,
     createdCompanies: toInsert.map((row) => ({
       name: row.name,

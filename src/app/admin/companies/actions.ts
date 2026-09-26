@@ -43,18 +43,20 @@ export async function createCompany(formData: FormData) {
   const contactEmail = String(formData.get("contactEmail") ?? "").trim() || null;
   const { country: phoneCountry, national: phoneNational } = readPhone(formData);
 
-  if (!name) throw new Error("Nome da empresa é obrigatório");
+  if (!name) return { ok: false as const, error: "Nome da empresa é obrigatório." };
   const documentError = validateDocument(document);
-  if (documentError) throw new Error(documentError);
+  if (documentError) return { ok: false as const, error: documentError };
   const phoneError = validatePhone(phoneCountry, phoneNational);
-  if (phoneError) throw new Error(phoneError);
+  if (phoneError) return { ok: false as const, error: phoneError };
 
   const [existing] = await getDb()
     .select({ id: companies.id })
     .from(companies)
     .where(eq(companies.cnpj, document))
     .limit(1);
-  if (existing) throw new Error("Já existe uma empresa cadastrada com esse CNPJ/CPF");
+  if (existing) {
+    return { ok: false as const, error: "Já existe uma empresa cadastrada com esse CNPJ/CPF." };
+  }
 
   await getDb().insert(companies).values({
     name,
@@ -63,6 +65,7 @@ export async function createCompany(formData: FormData) {
     contactPhone: buildPhoneValue(phoneCountry, phoneNational) || null,
   });
   revalidatePath("/admin/companies");
+  return { ok: true as const };
 }
 
 export async function updateCompany(id: string, formData: FormData) {
