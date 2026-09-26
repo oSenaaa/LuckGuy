@@ -11,7 +11,7 @@ import { CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
-import { ROLE_LABELS, type Role } from "@/lib/permissions";
+import { ROLE_LABELS, type Role } from "@/lib/roles";
 
 export function InviteUserForm() {
   const router = useRouter();
