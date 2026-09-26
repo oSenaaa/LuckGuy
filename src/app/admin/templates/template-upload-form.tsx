@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import { CircleNotch } from "@phosphor-icons/react";
+import { toast } from "sonner";
 import {
   TEMPLATE_IMAGE_MAX_SIZE_BYTES,
   TEMPLATE_IMAGE_MAX_SIZE_LABEL,
@@ -95,6 +96,7 @@ export function TemplateUploadForm({
       if (!result.ok) {
         setStatus("idle");
         setError(result.error);
+        toast.error(result.error);
         return;
       }
 
@@ -103,11 +105,14 @@ export function TemplateUploadForm({
       setPreviewFile(null);
       onPreviewChange?.(null);
       setStatus("done");
+      toast.success("Modelo enviado.");
       router.refresh();
     } catch (uploadError) {
       console.error(uploadError);
       setStatus("idle");
-      setError("Não foi possível enviar o modelo. Verifique sua conexão e tente novamente.");
+      const message = "Não foi possível enviar o modelo. Verifique sua conexão e tente novamente.";
+      setError(message);
+      toast.error(message);
     }
   }
 
