@@ -219,7 +219,12 @@ export function WorkplacesPanel({
           className="flex items-start gap-2 border-t px-4 py-3"
         >
           <div className="flex-1">
-            <Input name="name" placeholder="Ex: Obra Alfa - Setor Administrativo" disabled={adding} />
+            <Input
+              name="name"
+              aria-label="Nome do posto de trabalho"
+              placeholder="Ex: Obra Alfa - Setor Administrativo"
+              disabled={adding}
+            />
             {addError && <p className="mt-1 text-xs text-destructive">{addError}</p>}
           </div>
           <Button type="submit" variant="outline" size="sm" disabled={adding}>

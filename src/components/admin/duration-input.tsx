@@ -7,12 +7,14 @@ import { NativeSelect } from "@/components/ui/native-select";
 type Unit = "minutes" | "hours";
 
 export function DurationInput({
+  valueId,
   valueName,
   unitName,
   defaultUnit = "hours",
   defaultValue,
   required,
 }: {
+  valueId?: string;
   valueName: string;
   unitName: string;
   defaultUnit?: Unit;
@@ -24,6 +26,7 @@ export function DurationInput({
   return (
     <div className="flex gap-2">
       <Input
+        id={valueId}
         name={valueName}
         type="number"
         inputMode="decimal"
@@ -37,6 +40,7 @@ export function DurationInput({
       />
       <NativeSelect
         name={unitName}
+        aria-label="Unidade de duração"
         value={unit}
         onChange={(event) => setUnit(event.target.value as Unit)}
         className="w-28 shrink-0"

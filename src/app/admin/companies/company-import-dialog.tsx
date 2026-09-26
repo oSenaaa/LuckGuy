@@ -143,6 +143,7 @@ export function CompanyImportDialog({
                   type="file"
                   accept=".xlsx"
                   disabled={pending}
+                  aria-label="Selecionar planilha preenchida (.xlsx)"
                   onChange={(event) => setFile(event.target.files?.[0] ?? null)}
                 />
                 {error && (

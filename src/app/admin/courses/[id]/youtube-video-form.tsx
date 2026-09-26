@@ -57,12 +57,13 @@ export function YoutubeVideoForm({ courseId }: { courseId: string }) {
 
   return (
     <div className="rounded-lg border p-4">
-      <Label className="flex items-center gap-2">
+      <Label htmlFor="course-youtube-url" className="flex items-center gap-2">
         <LinkSimple size={16} className="text-muted-foreground" />
         Vídeo via link do YouTube
       </Label>
       <form onSubmit={handleSubmit} className="mt-2 flex gap-2">
         <Input
+          id="course-youtube-url"
           name="youtubeUrl"
           type="url"
           required

@@ -71,11 +71,12 @@ export function VideoUpload({ courseId }: { courseId: string }) {
 
   return (
     <div className="rounded-lg border p-4">
-      <Label className="flex items-center gap-2">
+      <Label htmlFor="course-video-file" className="flex items-center gap-2">
         <UploadSimple size={16} className="text-muted-foreground" />
         Enviar arquivo de vídeo
       </Label>
       <Input
+        id="course-video-file"
         type="file"
         accept="video/mp4,video/webm,video/quicktime"
         onChange={handleChange}

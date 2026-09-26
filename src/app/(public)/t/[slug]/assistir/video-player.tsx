@@ -908,7 +908,7 @@ export function VideoPlayer({
       {completed && !certificateUrl && (
         <Badge
           variant="secondary"
-          className="w-fit gap-1 text-emerald-600 dark:text-emerald-400"
+          className="w-fit gap-1 text-emerald-800 dark:text-emerald-400"
         >
           <CheckCircle2 />
           Treinamento concluído

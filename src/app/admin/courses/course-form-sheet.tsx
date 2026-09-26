@@ -135,8 +135,9 @@ export function CourseFormSheet({
             />
           </div>
           <div className="grid gap-2">
-            <Label>Duração padrão</Label>
+            <Label htmlFor={`${idPrefix}-defaultDurationValue`}>Duração padrão</Label>
             <DurationInput
+              valueId={`${idPrefix}-defaultDurationValue`}
               valueName="defaultDurationValue"
               unitName="defaultDurationUnit"
               defaultUnit={durationUnit}

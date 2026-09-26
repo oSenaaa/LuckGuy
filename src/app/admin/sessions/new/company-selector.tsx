@@ -81,7 +81,7 @@ export function CompanySelector({ companies }: { companies: Company[] }) {
                   type="button"
                   onClick={() => toggleCompany(company.id)}
                   aria-label={`Remover ${company.name}`}
-                  className="rounded-full text-muted-foreground hover:text-foreground"
+                  className="rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
                 >
                   <X size={14} />
                 </button>
@@ -161,7 +161,7 @@ export function CompanySelector({ companies }: { companies: Company[] }) {
                     type="button"
                     onClick={() => removePendingWorkplace(workplace.key)}
                     aria-label={`Remover posto ${workplace.name}`}
-                    className="text-muted-foreground hover:text-foreground"
+                    className="rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
                   >
                     <X size={14} />
                   </button>
