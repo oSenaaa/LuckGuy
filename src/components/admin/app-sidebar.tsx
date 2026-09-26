@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Award,
-  Building2,
-  CalendarClock,
-  ExternalLink,
-  GraduationCap,
-  LayoutDashboard,
-  PenLine,
-  Settings,
-} from "lucide-react";
+  ArrowSquareOut,
+  BookOpenText,
+  Buildings,
+  Certificate,
+  GearSix,
+  Signature,
+  SquaresFour,
+  UsersThree,
+} from "@phosphor-icons/react";
 
 import { LiderLogo, LiderMark } from "@/components/brand/logo";
 import {
@@ -29,16 +29,16 @@ import {
 import type { Role } from "@/lib/roles";
 
 const NAV_ITEMS = [
-  { label: "Painel", href: "/admin", icon: LayoutDashboard },
-  { label: "Empresas", href: "/admin/companies", icon: Building2 },
-  { label: "Treinamentos", href: "/admin/courses", icon: GraduationCap },
-  { label: "Turmas", href: "/admin/sessions", icon: CalendarClock },
-  { label: "Modelo de certificado", href: "/admin/templates", icon: Award },
-  { label: "Assinaturas", href: "/admin/signatures", icon: PenLine },
+  { label: "Painel", href: "/admin", icon: SquaresFour },
+  { label: "Empresas", href: "/admin/companies", icon: Buildings },
+  { label: "Treinamentos", href: "/admin/courses", icon: BookOpenText },
+  { label: "Turmas", href: "/admin/sessions", icon: UsersThree },
+  { label: "Modelo de certificado", href: "/admin/templates", icon: Certificate },
+  { label: "Assinaturas", href: "/admin/signatures", icon: Signature },
 ] as const;
 
 const ADMIN_ONLY_NAV_ITEMS = [
-  { label: "Configurações", href: "/admin/settings", icon: Settings },
+  { label: "Configurações", href: "/admin/settings", icon: GearSix },
 ] as const;
 
 function isActivePath(pathname: string, href: string) {
@@ -67,20 +67,19 @@ export function AppSidebar({ role }: { role: Role }) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map(({ label, href, icon: Icon }) => (
-                <SidebarMenuItem key={href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActivePath(pathname, href)}
-                    tooltip={label}
-                  >
-                    <Link href={href}>
-                      <Icon />
-                      <span>{label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {navItems.map(({ label, href, icon: Icon }) => {
+                const active = isActivePath(pathname, href);
+                return (
+                  <SidebarMenuItem key={href}>
+                    <SidebarMenuButton asChild isActive={active} tooltip={label}>
+                      <Link href={href}>
+                        <Icon size={18} weight={active ? "fill" : "regular"} />
+                        <span>{label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -91,7 +90,7 @@ export function AppSidebar({ role }: { role: Role }) {
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Ver site público">
               <Link href="/" target="_blank" rel="noreferrer">
-                <ExternalLink />
+                <ArrowSquareOut size={18} weight="regular" />
                 <span>Ver site</span>
               </Link>
             </SidebarMenuButton>
