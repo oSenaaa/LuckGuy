@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
-import { UserButton } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 import { AppSidebar } from "@/components/admin/app-sidebar";
@@ -30,9 +29,15 @@ export default async function AdminLayout({
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
 
+  const user = await currentUser();
+  const userName = user
+    ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "Usuário"
+    : "Usuário";
+  const userEmail = user?.primaryEmailAddress?.emailAddress ?? "";
+
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar role={current.role} />
+      <AppSidebar role={current.role} userName={userName} userEmail={userEmail} />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <SidebarTrigger className="-ml-1" />
@@ -40,7 +45,6 @@ export default async function AdminLayout({
           <AdminBreadcrumb />
           <div className="ml-auto flex items-center gap-1">
             <ThemeToggle />
-            <UserButton />
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6">{children}</main>

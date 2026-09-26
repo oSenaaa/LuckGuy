@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Sun } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,8 +24,8 @@ export function ThemeToggle() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" aria-label="Alternar tema">
-          <Sun className="dark:hidden" />
-          <Moon className="hidden dark:block" />
+          <Sun size={16} className="dark:hidden" />
+          <Moon size={16} className="hidden dark:block" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -36,7 +36,7 @@ export function ThemeToggle() {
             data-active={theme === value}
             className="data-[active=true]:text-primary"
           >
-            <Icon />
+            <Icon size={16} />
             {label}
           </DropdownMenuItem>
         ))}
