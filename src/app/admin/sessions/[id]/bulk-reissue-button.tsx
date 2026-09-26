@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, RefreshCw } from "lucide-react";
+import { ArrowsClockwise, CircleNotch } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { reissueCertificate } from "../actions";
@@ -58,7 +58,7 @@ export function BulkReissueButton({
       disabled={pending || participantIds.length === 0}
       onClick={handleReissueAll}
     >
-      {pending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+      {pending ? <CircleNotch className="animate-spin" size={16} /> : <ArrowsClockwise size={16} />}
       {label}
     </Button>
   );

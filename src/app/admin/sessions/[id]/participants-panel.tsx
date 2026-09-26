@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Download } from "lucide-react";
+import { DownloadSimple, UsersThree } from "@phosphor-icons/react";
 
 import { BulkReissueButton } from "./bulk-reissue-button";
 import { ReissueCertificateButton } from "./reissue-certificate-button";
+import { CopyButton } from "@/components/copy-button";
+import { StatusBadge } from "@/components/admin/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -34,12 +36,14 @@ type Participant = {
 export function ParticipantsPanel({
   participants,
   sessionId,
-  downloadAllHref,
+  publicUrl,
+  exportHref,
   canEdit,
 }: {
   participants: Participant[];
   sessionId: string;
-  downloadAllHref: string;
+  publicUrl: string;
+  exportHref: string;
   canEdit: boolean;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -74,35 +78,31 @@ export function ParticipantsPanel({
           Participantes
           <Badge variant="secondary">{participants.length}</Badge>
         </CardTitle>
-        {withCertificate.length > 0 && (
-          <CardAction className="flex flex-wrap items-center gap-2">
-            {canEdit && selected.size > 0 && (
-              <BulkReissueButton
-                participantIds={Array.from(selected)}
-                sessionId={sessionId}
-                label={`Reemitir selecionados (${selected.size})`}
-              />
-            )}
-            {canEdit && (
-              <BulkReissueButton
-                participantIds={withCertificate.map((p) => p.id)}
-                sessionId={sessionId}
-              />
-            )}
+        <CardAction className="flex flex-wrap items-center gap-2">
+          {canEdit && selected.size > 0 && (
+            <BulkReissueButton
+              participantIds={Array.from(selected)}
+              sessionId={sessionId}
+              label={`Reemitir selecionados (${selected.size})`}
+            />
+          )}
+          {participants.length > 0 && (
             <Button asChild variant="outline" size="sm">
-              <a href={downloadAllHref}>
-                <Download />
-                Baixar todos (ZIP)
+              <a href={exportHref}>
+                <DownloadSimple size={16} />
+                Exportar CSV
               </a>
             </Button>
-          </CardAction>
-        )}
+          )}
+        </CardAction>
       </CardHeader>
       <CardContent className="p-0">
         {participants.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            Nenhum participante ainda.
-          </p>
+          <div className="flex flex-col items-center gap-3 px-4 py-16 text-center">
+            <UsersThree size={32} className="text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Nenhum participante ainda.</p>
+            <CopyButton value={publicUrl} label="Copiar link de acesso" />
+          </div>
         ) : (
           <Table>
             <TableHeader>
@@ -121,7 +121,7 @@ export function ParticipantsPanel({
                 <TableHead>Empresa</TableHead>
                 <TableHead>Posto de trabalho</TableHead>
                 <TableHead className="text-right">% assistido</TableHead>
-                <TableHead>Concluído</TableHead>
+                <TableHead>Assinatura</TableHead>
                 <TableHead className="sticky right-0 z-10 border-l bg-background text-right">
                   Certificado
                 </TableHead>
@@ -152,13 +152,10 @@ export function ParticipantsPanel({
                     {p.watchedPercent ? Number(p.watchedPercent).toFixed(0) : 0}%
                   </TableCell>
                   <TableCell>
-                    {p.completedAt ? (
-                      <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                        <CheckCircle2 className="size-4" />
-                        Sim
-                      </span>
+                    {p.certificateUrl ? (
+                      <StatusBadge status="active">Assinado</StatusBadge>
                     ) : (
-                      <span className="text-muted-foreground">Não</span>
+                      <StatusBadge status="pending">Pendente de assinatura</StatusBadge>
                     )}
                   </TableCell>
                   <TableCell className="sticky right-0 border-l bg-background group-hover:bg-muted/50">
@@ -166,7 +163,7 @@ export function ParticipantsPanel({
                       <div className="flex items-center justify-end gap-1">
                         <Button asChild variant="ghost" size="icon-sm" aria-label="Baixar certificado" title="Baixar certificado">
                           <Link href={p.certificateUrl} target="_blank">
-                            <Download />
+                            <DownloadSimple size={20} />
                           </Link>
                         </Button>
                         {canEdit && (

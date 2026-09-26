@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Send } from "lucide-react";
+import { CircleNotch, PaperPlaneTilt } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { publishSession } from "../actions";
@@ -31,7 +31,7 @@ export function PublishSessionButton({ sessionId }: { sessionId: string }) {
 
   return (
     <Button type="button" disabled={pending} onClick={handlePublish}>
-      {pending ? <Loader2 className="animate-spin" /> : <Send />}
+      {pending ? <CircleNotch className="animate-spin" size={16} /> : <PaperPlaneTilt size={16} />}
       Publicar turma
     </Button>
   );
