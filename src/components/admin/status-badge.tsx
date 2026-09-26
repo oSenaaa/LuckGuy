@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 
 const STATUS_STYLES = {
-  active: "bg-emerald-500/15 text-emerald-400",
+  active: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   draft: "bg-muted text-muted-foreground",
-  pending: "bg-amber-500/15 text-amber-400",
-  ended: "bg-red-500/15 text-red-400",
+  pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  ended: "bg-red-500/15 text-red-600 dark:text-red-400",
 } as const;
 
 export function StatusBadge({
