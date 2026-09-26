@@ -49,8 +49,12 @@ export default async function SettingsPage() {
         <CardContent>
           <form
             action={inviteUser}
-            className="grid gap-4 sm:grid-cols-[1fr_180px_auto] sm:items-end"
+            className="grid gap-4 sm:grid-cols-[1fr_1fr_180px_auto] sm:items-end"
           >
+            <div className="grid gap-2">
+              <Label htmlFor="invite-name">Nome</Label>
+              <Input id="invite-name" name="name" required placeholder="Nome completo" />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="invite-email">E-mail</Label>
               <Input
@@ -97,7 +101,7 @@ export default async function SettingsPage() {
                   >
                     <div className="min-w-0">
                       <p className="truncate font-medium">
-                        {user.primaryEmailAddress?.emailAddress ?? user.id}
+                        {user.fullName?.trim() || user.publicMetadata.name || "Sem nome"}
                       </p>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <Badge variant="outline">{role ? ROLE_LABELS[role] : "Sem permissão"}</Badge>
@@ -135,13 +139,17 @@ export default async function SettingsPage() {
                 const role = isRole(invitation.publicMetadata?.role)
                   ? invitation.publicMetadata.role
                   : null;
+                const name =
+                  typeof invitation.publicMetadata?.name === "string"
+                    ? invitation.publicMetadata.name
+                    : null;
                 return (
                   <li
                     key={invitation.id}
                     className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
                   >
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{invitation.emailAddress}</p>
+                      <p className="truncate font-medium">{name ?? "Sem nome"}</p>
                       {role && (
                         <Badge variant="outline" className="mt-1">
                           {ROLE_LABELS[role]}

@@ -13,9 +13,11 @@ function readRole(value: FormDataEntryValue | null): Role | null {
 export async function inviteUser(formData: FormData) {
   await requireAdmin();
 
+  const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const role = readRole(formData.get("role"));
 
+  if (!name) throw new Error("Nome é obrigatório");
   if (!email) throw new Error("E-mail é obrigatório");
   if (!role) throw new Error("Selecione um nível de permissão");
 
@@ -23,7 +25,7 @@ export async function inviteUser(formData: FormData) {
   try {
     await client.invitations.createInvitation({
       emailAddress: email,
-      publicMetadata: { role },
+      publicMetadata: { role, name },
     });
   } catch {
     throw new Error(
@@ -45,6 +47,22 @@ export async function updateUserRole(userId: string, formData: FormData) {
 
   const client = await clerkClient();
   await client.users.updateUserMetadata(userId, { publicMetadata: { role } });
+  revalidatePath("/admin/settings");
+  return { ok: true as const };
+}
+
+export async function deleteUser(userId: string) {
+  const { userId: currentUserId } = await requireAdmin();
+  if (userId === currentUserId) {
+    return { ok: false as const, error: "Você não pode excluir seu próprio usuário." };
+  }
+
+  const client = await clerkClient();
+  try {
+    await client.users.deleteUser(userId);
+  } catch {
+    return { ok: false as const, error: "Não foi possível excluir o usuário." };
+  }
   revalidatePath("/admin/settings");
   return { ok: true as const };
 }

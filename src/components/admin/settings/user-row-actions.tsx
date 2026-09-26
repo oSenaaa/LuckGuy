@@ -2,10 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, MoreVertical, ShieldCheck, ShieldOff, UserCog } from "lucide-react";
+import { Loader2, MoreVertical, ShieldCheck, ShieldOff, Trash2, UserCog } from "lucide-react";
 import { toast } from "sonner";
 
-import { restoreAccess, revokeAccess, updateUserRole } from "@/app/admin/settings/actions";
+import { deleteUser, restoreAccess, revokeAccess, updateUserRole } from "@/app/admin/settings/actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,6 +37,7 @@ export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowA
   const [roleOpen, setRoleOpen] = useState(false);
   const [rolePending, setRolePending] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isCurrentUser) return null;
 
@@ -107,6 +108,13 @@ export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowA
               Revogar acesso
             </DropdownMenuItem>
           )}
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
+            <Trash2 />
+            Excluir usuário
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -143,6 +151,33 @@ export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowA
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Excluir usuário</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Esta ação exclui a conta permanentemente e não pode ser desfeita.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={pending}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={pending}
+              onClick={async () => {
+                await run(() => deleteUser(userId), "Usuário excluído.");
+                setDeleteOpen(false);
+              }}
+            >
+              {pending && <Loader2 className="animate-spin" />}
+              Excluir
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>
