@@ -4,12 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Archive,
-  ArchiveRestore,
-  ArrowUpRight,
-  Loader2,
-  MoreVertical,
+  ArrowCounterClockwise,
+  CircleNotch,
+  DotsThreeVertical,
+  Eye,
   Star,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import {
@@ -19,18 +19,13 @@ import {
 } from "./actions";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { TemplatePreview } from "./template-preview-panel";
 
 type TemplateRowActionsProps = {
   id: string;
@@ -39,6 +34,7 @@ type TemplateRowActionsProps = {
   isDefault: boolean;
   isArchived: boolean;
   canEdit: boolean;
+  onPreview: (preview: TemplatePreview) => void;
 };
 
 export function TemplateRowActions({
@@ -48,10 +44,10 @@ export function TemplateRowActions({
   isDefault,
   isArchived,
   canEdit,
+  onPreview,
 }: TemplateRowActionsProps) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
 
   async function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
@@ -74,84 +70,67 @@ export function TemplateRowActions({
   }
 
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={pending}
-            aria-label={`Ações do modelo ${name}`}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          disabled={pending}
+          aria-label={`Ações do modelo ${name}`}
+        >
+          {pending ? (
+            <CircleNotch size={20} className="animate-spin" />
+          ) : (
+            <DotsThreeVertical size={20} />
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuItem
+          onSelect={() => onPreview({ name, url: backgroundImageBlobUrl })}
+        >
+          <Eye size={16} />
+          Visualizar
+        </DropdownMenuItem>
+
+        {canEdit && <DropdownMenuSeparator />}
+
+        {canEdit && !isArchived && !isDefault && (
+          <DropdownMenuItem
+            onSelect={() =>
+              run(() => setDefaultTemplate(id), "Modelo definido como padrão.")
+            }
           >
-            {pending ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <MoreVertical />
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
-          {canEdit && !isArchived && !isDefault && (
+            <Star size={16} />
+            Tornar padrão
+          </DropdownMenuItem>
+        )}
+
+        {canEdit &&
+          (isArchived ? (
             <DropdownMenuItem
               onSelect={() =>
-                run(() => setDefaultTemplate(id), "Modelo definido como padrão.")
+                run(() => unarchiveTemplate(id), "Modelo desarquivado.")
               }
             >
-              <Star />
-              Tornar padrão
+              <ArrowCounterClockwise size={16} />
+              Desarquivar
             </DropdownMenuItem>
-          )}
-
-          {canEdit &&
-            (isArchived ? (
-              <DropdownMenuItem
-                onSelect={() =>
-                  run(() => unarchiveTemplate(id), "Modelo desarquivado.")
-                }
-              >
-                <ArchiveRestore />
-                Desarquivar
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem
-                disabled={isDefault}
-                title={
-                  isDefault
-                    ? "Torne outro modelo padrão antes de arquivar este."
-                    : undefined
-                }
-                onSelect={() =>
-                  run(() => archiveTemplate(id), "Modelo arquivado.")
-                }
-              >
-                <Archive />
-                Arquivar
-              </DropdownMenuItem>
-            ))}
-
-          {canEdit && <DropdownMenuSeparator />}
-
-          <DropdownMenuItem onSelect={() => setPreviewOpen(true)}>
-            <ArrowUpRight />
-            Visualizar
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{name}</DialogTitle>
-          </DialogHeader>
-          {/* Blob URL não está em images.remotePatterns; usar <img> puro. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={backgroundImageBlobUrl}
-            alt={`Pré-visualização do modelo ${name}`}
-            className="max-h-[70vh] w-full rounded-md border object-contain"
-          />
-        </DialogContent>
-      </Dialog>
-    </>
+          ) : (
+            <DropdownMenuItem
+              disabled={isDefault}
+              title={
+                isDefault
+                  ? "Torne outro modelo padrão antes de arquivar este."
+                  : undefined
+              }
+              onSelect={() => run(() => archiveTemplate(id), "Modelo arquivado.")}
+            >
+              <Archive size={16} />
+              Arquivar
+            </DropdownMenuItem>
+          ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

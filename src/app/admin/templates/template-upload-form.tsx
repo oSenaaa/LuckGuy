@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
+import { CircleNotch } from "@phosphor-icons/react";
 import {
   TEMPLATE_IMAGE_MAX_SIZE_BYTES,
   TEMPLATE_IMAGE_MAX_SIZE_LABEL,
@@ -15,24 +16,32 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import type { TemplatePreview } from "./template-preview-panel";
 
 type UploadStatus = "idle" | "uploading" | "saving" | "done";
 
-export function TemplateUploadForm() {
+export function TemplateUploadForm({
+  onPreviewChange,
+}: {
+  onPreviewChange?: (preview: TemplatePreview) => void;
+}) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [previewName, setPreviewName] = useState("");
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
 
   const isBusy = status === "uploading" || status === "saving";
+
+  useEffect(() => {
+    if (!previewFile) return;
+    const url = URL.createObjectURL(previewFile);
+    onPreviewChange?.({ name: previewName.trim() || previewFile.name, url });
+    return () => URL.revokeObjectURL(url);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewFile, previewName]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,6 +99,9 @@ export function TemplateUploadForm() {
       }
 
       formRef.current?.reset();
+      setPreviewName("");
+      setPreviewFile(null);
+      onPreviewChange?.(null);
       setStatus("done");
       router.refresh();
     } catch (uploadError) {
@@ -100,66 +112,61 @@ export function TemplateUploadForm() {
   }
 
   return (
-    <Card>
-      <CardHeader className="border-b">
-        <CardTitle>Novo modelo</CardTitle>
-        <CardDescription>
-          Envie a imagem de fundo (com a margem para assinatura já desenhada). Nome, treinamento,
-          carga horária e código de validação são sobrepostos automaticamente.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form ref={formRef} onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="name">Nome do modelo</Label>
-            <Input
-              id="name"
-              name="name"
-              required
-              maxLength={120}
-              placeholder="Ex: Padrão 2026"
-              disabled={isBusy}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="backgroundImage">Imagem de fundo</Label>
-            <Input
-              id="backgroundImage"
-              name="backgroundImage"
-              type="file"
-              accept="image/png,image/jpeg"
-              required
-              disabled={isBusy}
-            />
-            <p className="text-xs text-muted-foreground">
-              PNG ou JPG, com no máximo {TEMPLATE_IMAGE_MAX_SIZE_LABEL}.
-            </p>
-          </div>
-          <Label className="flex items-center gap-2 font-normal">
-            <Checkbox name="isDefault" value="on" disabled={isBusy} />
-            Usar como modelo padrão
-          </Label>
-          <div>
-            <Button type="submit" disabled={isBusy}>
-              {status === "uploading"
-                ? `Enviando… ${progress}%`
-                : status === "saving"
-                  ? "Salvando…"
-                  : "Enviar modelo"}
-            </Button>
-          </div>
-          {status === "done" && (
-            <p role="status" className="text-sm text-emerald-600">
-              Modelo enviado com sucesso.
-            </p>
-          )}
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
-        </form>
-      </CardContent>
-    </Card>
+    <form ref={formRef} onSubmit={handleSubmit} className="grid gap-4">
+      <p className="text-sm text-muted-foreground">
+        Nome, treinamento, carga horária e código de validação são sobrepostos automaticamente.
+      </p>
+      <div className="grid gap-2">
+        <Label htmlFor="name">Nome do modelo</Label>
+        <Input
+          id="name"
+          name="name"
+          required
+          maxLength={120}
+          placeholder="Ex: Padrão 2026"
+          disabled={isBusy}
+          onChange={(event) => setPreviewName(event.target.value)}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="backgroundImage">Imagem de fundo</Label>
+        <Input
+          id="backgroundImage"
+          name="backgroundImage"
+          type="file"
+          accept="image/png,image/jpeg"
+          required
+          disabled={isBusy}
+          onChange={(event) => setPreviewFile(event.target.files?.[0] ?? null)}
+        />
+        <p className="text-xs text-muted-foreground">
+          PNG ou JPG, com no máximo {TEMPLATE_IMAGE_MAX_SIZE_LABEL}.
+        </p>
+      </div>
+      <Label className="flex items-center gap-2 font-normal">
+        <Checkbox name="isDefault" value="on" disabled={isBusy} />
+        Usar como modelo padrão
+      </Label>
+      <div>
+        <Button type="submit" disabled={isBusy}>
+          {isBusy && <CircleNotch size={16} className="animate-spin" />}
+          {status === "uploading"
+            ? `Enviando… ${progress}%`
+            : status === "saving"
+              ? "Salvando…"
+              : "Enviar modelo"}
+        </Button>
+      </div>
+      {status === "done" && (
+        <p role="status" className="text-sm text-emerald-400">
+          Modelo enviado com sucesso.
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
+    </form>
   );
 }
