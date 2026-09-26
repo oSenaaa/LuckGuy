@@ -151,7 +151,7 @@ export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowA
               </NativeSelect>
             </div>
             {roleError && (
-              <p role="alert" className="text-sm text-destructive">
+              <p role="alert" className="text-xs text-destructive">
                 {roleError}
               </p>
             )}

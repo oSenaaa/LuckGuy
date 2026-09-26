@@ -158,7 +158,7 @@ export function TemplateUploadForm({
         </Button>
       </div>
       {status === "done" && (
-        <p role="status" className="text-sm text-emerald-400">
+        <p role="status" className="text-xs text-emerald-400">
           Modelo enviado com sucesso.
         </p>
       )}

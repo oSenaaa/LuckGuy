@@ -18,7 +18,7 @@ function EmptyState({
       <SignatureIcon size={32} className="text-muted-foreground" />
       <p className="text-sm text-muted-foreground">Nenhuma assinatura cadastrada.</p>
       {canEdit && (
-        <Button size="sm" onClick={onCreateClick}>
+        <Button variant="outline" size="sm" onClick={onCreateClick}>
           <Plus size={16} />
           Nova assinatura
         </Button>

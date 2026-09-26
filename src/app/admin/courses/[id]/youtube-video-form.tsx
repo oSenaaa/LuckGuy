@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Link2, Loader2 } from "lucide-react";
+import { CircleNotch, LinkSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { extractYoutubeVideoId } from "@/lib/youtube";
@@ -58,7 +58,7 @@ export function YoutubeVideoForm({ courseId }: { courseId: string }) {
   return (
     <div className="rounded-lg border p-4">
       <Label className="flex items-center gap-2">
-        <Link2 className="size-4 text-muted-foreground" />
+        <LinkSimple size={16} className="text-muted-foreground" />
         Vídeo via link do YouTube
       </Label>
       <form onSubmit={handleSubmit} className="mt-2 flex gap-2">
@@ -70,7 +70,7 @@ export function YoutubeVideoForm({ courseId }: { courseId: string }) {
           disabled={loading}
         />
         <Button type="submit" disabled={loading}>
-          {loading ? <Loader2 className="animate-spin" /> : null}
+          {loading ? <CircleNotch size={16} className="animate-spin" /> : null}
           {loading ? "Verificando…" : "Usar vídeo"}
         </Button>
       </form>

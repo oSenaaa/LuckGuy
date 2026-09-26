@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { AlertTriangle } from "lucide-react";
+import { Warning } from "@phosphor-icons/react";
 
 import { StatusCard } from "@/components/status-card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ export default function AdminError({
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <StatusCard
-        icon={AlertTriangle}
+        icon={Warning}
         tone="destructive"
         title="Algo deu errado"
         description={

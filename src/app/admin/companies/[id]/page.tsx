@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { Briefcase, Building2, Mail, Phone } from "lucide-react";
+import { Briefcase, EnvelopeSimple, Phone } from "@phosphor-icons/react/dist/ssr";
 
 import { getDb } from "@/lib/db";
 import {
@@ -68,7 +68,6 @@ export default async function CompanyDetailPage({
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
       <PageHeader
-        icon={Building2}
         title={company.name}
         description={company.cnpj ?? "CNPJ não informado"}
       />
@@ -82,7 +81,7 @@ export default async function CompanyDetailPage({
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="flex items-start gap-3">
-            <Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <EnvelopeSimple className="mt-0.5 shrink-0 text-muted-foreground" size={16} />
             <div>
               <p className="text-xs text-muted-foreground">E-mail de contato</p>
               <p className="font-medium">
@@ -93,7 +92,7 @@ export default async function CompanyDetailPage({
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <Phone className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <Phone className="mt-0.5 shrink-0 text-muted-foreground" size={16} />
             <div>
               <p className="text-xs text-muted-foreground">Telefone de contato</p>
               <p className="font-medium">
@@ -109,7 +108,7 @@ export default async function CompanyDetailPage({
       <Card>
         <CardHeader className="border-b">
           <CardTitle className="flex items-center gap-2">
-            <Briefcase className="size-4 text-muted-foreground" />
+            <Briefcase className="text-muted-foreground" size={16} />
             Postos de trabalho
           </CardTitle>
           <CardDescription>

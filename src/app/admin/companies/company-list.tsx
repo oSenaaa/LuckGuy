@@ -45,7 +45,7 @@ function EmptyState({
       <Buildings size={32} className="text-muted-foreground" />
       <p className="text-sm text-muted-foreground">{title}</p>
       {canEdit && (
-        <Button size="sm" onClick={onCreateClick}>
+        <Button variant="outline" size="sm" onClick={onCreateClick}>
           <Plus size={16} />
           Nova empresa
         </Button>

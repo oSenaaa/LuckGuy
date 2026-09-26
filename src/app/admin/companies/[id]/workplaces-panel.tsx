@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, ArchiveRestore, Loader2, Pencil, Plus } from "lucide-react";
+import { Archive, CircleNotch, PencilSimple, Plus, TrayArrowUp } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import {
@@ -92,7 +92,7 @@ function WorkplaceRow({ workplace, canEdit }: { workplace: Workplace; canEdit: b
               setEditOpen(true);
             }}
           >
-            <Pencil />
+            <PencilSimple size={16} />
           </Button>
           <Button
             variant="ghost"
@@ -106,11 +106,11 @@ function WorkplaceRow({ workplace, canEdit }: { workplace: Workplace; canEdit: b
             }
           >
             {pending ? (
-              <Loader2 className="animate-spin" />
+              <CircleNotch size={16} className="animate-spin" />
             ) : isArchived ? (
-              <ArchiveRestore />
+              <TrayArrowUp size={16} />
             ) : (
-              <Archive />
+              <Archive size={16} />
             )}
           </Button>
         </div>
@@ -133,13 +133,13 @@ function WorkplaceRow({ workplace, canEdit }: { workplace: Workplace; canEdit: b
               />
             </div>
             {editError && (
-              <p role="alert" className="text-sm text-destructive">
+              <p role="alert" className="text-xs text-destructive">
                 {editError}
               </p>
             )}
             <div>
               <Button type="submit" disabled={editPending}>
-                {editPending && <Loader2 className="animate-spin" />}
+                {editPending && <CircleNotch size={16} className="animate-spin" />}
                 {editPending ? "Salvando…" : "Salvar alterações"}
               </Button>
             </div>
@@ -213,7 +213,7 @@ export function WorkplacesPanel({
             {addError && <p className="mt-1 text-xs text-destructive">{addError}</p>}
           </div>
           <Button type="submit" variant="outline" size="sm" disabled={adding}>
-            {adding ? <Loader2 className="animate-spin" /> : <Plus />}
+            {adding ? <CircleNotch size={16} className="animate-spin" /> : <Plus size={16} />}
             Adicionar posto
           </Button>
         </form>

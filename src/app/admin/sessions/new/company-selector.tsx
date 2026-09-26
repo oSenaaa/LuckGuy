@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-import { Plus, Search, X } from "lucide-react";
+import { MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
 
 import { normalizeText } from "@/lib/text";
 import { Button } from "@/components/ui/button";
@@ -83,7 +83,7 @@ export function CompanySelector({ companies }: { companies: Company[] }) {
                   aria-label={`Remover ${company.name}`}
                   className="rounded-full text-muted-foreground hover:text-foreground"
                 >
-                  <X className="size-3.5" />
+                  <X size={14} />
                 </button>
               </span>
             </li>
@@ -92,7 +92,10 @@ export function CompanySelector({ companies }: { companies: Company[] }) {
       )}
 
       <div className="relative">
-        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+        <MagnifyingGlass
+          size={16}
+          className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground"
+        />
         <Input
           role="combobox"
           aria-controls={listId}
@@ -160,7 +163,7 @@ export function CompanySelector({ companies }: { companies: Company[] }) {
                     aria-label={`Remover posto ${workplace.name}`}
                     className="text-muted-foreground hover:text-foreground"
                   >
-                    <X className="size-3.5" />
+                    <X size={14} />
                   </button>
                 </div>
               ))}
@@ -190,7 +193,7 @@ export function CompanySelector({ companies }: { companies: Company[] }) {
               size="sm"
               onClick={() => addPendingWorkplace(company.id)}
             >
-              <Plus />
+              <Plus size={16} />
               Adicionar
             </Button>
           </div>

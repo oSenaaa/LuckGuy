@@ -1,6 +1,5 @@
 import { eq, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { CalendarPlus } from "lucide-react";
 
 import { getDb } from "@/lib/db";
 import { companies, companyWorkplaces, courses } from "@/lib/db/schema";
@@ -42,7 +41,6 @@ export default async function NewSessionPage() {
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6">
       <PageHeader
-        icon={CalendarPlus}
         title="Nova turma"
         description="Vincule um treinamento a uma empresa e gere o link de acesso."
       />

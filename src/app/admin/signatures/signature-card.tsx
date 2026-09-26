@@ -66,7 +66,7 @@ export function SignatureCard({
           </div>
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold">{signature.coordinatorName}</p>
+              <p className="text-base font-semibold">{signature.coordinatorName}</p>
               {signature.isDefault && <Badge variant="secondary">Padrão</Badge>}
               {isArchived && <Badge variant="outline">Arquivada</Badge>}
             </div>
