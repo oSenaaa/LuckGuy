@@ -228,7 +228,7 @@ npm run dev
 
 ## 10. Como validar (roteiro ponta a ponta)
 
-1. **Criar o admin.** No dashboard do Clerk (o app de teste), crie um usuário. Acesse `http://localhost:3000/sign-in` e entre.
+1. **Criar o admin.** No dashboard do Clerk (o app de teste), crie um usuário e, em **Metadata → Public**, defina `{ "role": "admin" }` (primeiro admin de um app Clerk novo precisa disso manualmente; num projeto já em uso, rode o script de backfill da seção 13). Acesse `http://localhost:3000/sign-in` e entre.
 2. **Montar uma turma no `/admin`.**
    - `Empresas` → criar uma empresa.
    - `Treinamentos` → criar um curso (o slug é gerado do nome).
@@ -255,6 +255,7 @@ npm run dev
 | `npm run db:generate` | Gera SQL de migração em `drizzle/`. | Só se decidirem **versionar** migrações (hoje não é usado). |
 | `npm run db:studio` | Abre o Drizzle Studio (GUI do banco). | Inspecionar/editar dados. Carrega `.env.local`. |
 | `npx dotenv -e .env.local -- npx tsx scripts/seed-test-data.ts` | Popula dados de teste. | Após `db:push`. Opcional. |
+| `npx dotenv -e .env.local -- npx tsx scripts/backfill-admin-roles.ts` | Aplica `role: "admin"` a contas Clerk sem papel. | Uma vez, antes/logo após o deploy do gate de papel (ver seção 13). |
 | `vercel env pull .env.local` | Baixa as variáveis de ambiente do projeto. | Setup inicial; quando as credenciais mudarem. Sobrescreve o arquivo. |
 
 ---
@@ -282,7 +283,7 @@ Nenhuma credencial de YouTube/Google é necessária.
 - **Alias de import:** `@/*` → `src/*`.
 - **Sem camada de migrações.** Mudança de schema = editar `src/lib/db/schema.ts` + `npm run db:push`. Se for adotar migrações versionadas, passe a usar `npm run db:generate` e commite a pasta `drizzle/`.
 - **Tailwind v4:** não existe `tailwind.config`; a configuração fica em `src/app/globals.css`.
-- **Auth do admin é frouxa** de propósito no MVP (qualquer usuário Clerk logado). Se for expor, adicione verificação de papel/allowlist em `src/lib/require-admin.ts`.
+- **Papéis do admin:** `admin` / `editor` / `viewer`, guardados em `publicMetadata.role` no Clerk (sem tabela local de usuários) — ver `src/lib/permissions.ts`. Gerenciados em `/admin/settings` (só para `admin`). Contas Clerk criadas **antes** dessa feature não têm `role` nenhum; rode `npx dotenv -e .env.local -- npx tsx scripts/backfill-admin-roles.ts` uma vez para virarem `admin` (senão caem em `/sem-acesso` no próximo login).
 
 ---
 
