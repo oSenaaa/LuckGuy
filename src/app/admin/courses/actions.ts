@@ -44,12 +44,21 @@ export async function createCourse(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const nrCode = String(formData.get("nrCode") ?? "").trim() || null;
   const description = String(formData.get("description") ?? "").trim() || null;
-  const defaultDurationMinutes = parseDefaultDurationMinutes(formData);
   const coordinatorSignatureId = String(formData.get("coordinatorSignatureId") ?? "").trim() || null;
 
-  if (!name) throw new Error("Nome do treinamento é obrigatório");
+  if (!name) return { ok: false as const, error: "Nome do treinamento é obrigatório." };
 
-  const [course] = await getDb()
+  let defaultDurationMinutes: number | null;
+  try {
+    defaultDurationMinutes = parseDefaultDurationMinutes(formData);
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : "Duração inválida.",
+    };
+  }
+
+  await getDb()
     .insert(courses)
     .values({
       name,
@@ -58,31 +67,48 @@ export async function createCourse(formData: FormData) {
       description,
       defaultDurationMinutes,
       coordinatorSignatureId,
-    })
-    .returning({ id: courses.id });
+    });
 
   revalidatePath("/admin/courses");
-  redirect(`/admin/courses/${course.id}`);
+  return { ok: true as const };
 }
 
-export async function updateCourse(formData: FormData) {
+export async function updateCourse(id: string, formData: FormData) {
   await requireEditor();
-  const id = String(formData.get("id") ?? "");
+  if (!id) return { ok: false as const, error: "Treinamento inválido." };
+
   const name = String(formData.get("name") ?? "").trim();
   const nrCode = String(formData.get("nrCode") ?? "").trim() || null;
   const description = String(formData.get("description") ?? "").trim() || null;
-  const defaultDurationMinutes = parseDefaultDurationMinutes(formData);
   const isActive = formData.get("isActive") === "on";
 
-  if (!name) throw new Error("Nome do treinamento é obrigatório");
+  if (!name) return { ok: false as const, error: "Nome do treinamento é obrigatório." };
+
+  let defaultDurationMinutes: number | null;
+  try {
+    defaultDurationMinutes = parseDefaultDurationMinutes(formData);
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : "Duração inválida.",
+    };
+  }
 
   await getDb()
     .update(courses)
-    .set({ name, nrCode, description, defaultDurationMinutes, isActive, updatedAt: new Date() })
+    .set({
+      name,
+      nrCode,
+      description,
+      defaultDurationMinutes,
+      isActive,
+      updatedAt: new Date(),
+    })
     .where(eq(courses.id, id));
 
   revalidatePath("/admin/courses");
   revalidatePath(`/admin/courses/${id}`);
+  return { ok: true as const };
 }
 
 export async function setCourseSignature(formData: FormData) {

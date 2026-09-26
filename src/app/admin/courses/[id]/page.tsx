@@ -1,25 +1,22 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { GraduationCap, PenLine, Trash2, Video } from "lucide-react";
+import { Signature as SignatureIcon, Trash, VideoCamera } from "@phosphor-icons/react/dist/ssr";
 
 import { getDb } from "@/lib/db";
 import { certificateSignatures, courses, courseSessions } from "@/lib/db/schema";
 import { getCompanyNamesBySessionId } from "@/lib/sessions";
-import { deleteCourse, setCourseSignature, updateCourse } from "../actions";
+import { deleteCourse, setCourseSignature } from "../actions";
 import { VideoUpload } from "./video-upload";
-import { DurationInput } from "@/components/admin/duration-input";
 import { YoutubeVideoForm } from "./youtube-video-form";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
+import { StatusBadge } from "@/components/admin/status-badge";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
-import { Textarea } from "@/components/ui/textarea";
 import { getCurrentRole } from "@/lib/permissions";
 import {
   Card,
@@ -28,6 +25,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
+function formatDuration(minutes: number | null) {
+  if (!minutes) return "Não informada";
+  if (minutes < 60) return `${minutes} min`;
+  const hours = minutes / 60;
+  return `${Number.isInteger(hours) ? hours : hours.toFixed(1)}h`;
+}
 
 export default async function CourseDetailPage({
   params,
@@ -75,13 +79,6 @@ export default async function CourseDetailPage({
       ? `Assinatura padrão: ${defaultSignature.coordinatorName}`
       : "Nenhuma assinatura cadastrada ainda";
 
-  const durationUnit = course.defaultDurationMinutes && course.defaultDurationMinutes < 60 ? "minutes" : "hours";
-  const durationValue = course.defaultDurationMinutes
-    ? durationUnit === "minutes"
-      ? course.defaultDurationMinutes
-      : course.defaultDurationMinutes / 60
-    : undefined;
-
   const hasVideo =
     (course.videoProvider === "blob" && course.videoBlobUrl) ||
     (course.videoProvider === "youtube" && course.videoYoutubeId);
@@ -96,65 +93,40 @@ export default async function CourseDetailPage({
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
-      <PageHeader
-        icon={GraduationCap}
-        title={course.name}
-        description={course.nrCode ?? undefined}
-      >
-        <Badge variant={course.isActive ? "secondary" : "outline"}>
-          {course.isActive ? "Ativo" : "Inativo"}
-        </Badge>
+      <PageHeader title={course.name} description={course.nrCode ?? undefined}>
+        {course.isActive ? (
+          <StatusBadge status="active">Ativo</StatusBadge>
+        ) : (
+          <StatusBadge status="draft">Inativo</StatusBadge>
+        )}
       </PageHeader>
 
-      {canEdit && (
-        <Card>
-          <CardHeader className="border-b">
-            <CardTitle>Dados do treinamento</CardTitle>
-            <CardDescription>Edite as informações e salve para atualizar.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form action={updateCourse} className="grid gap-4 sm:grid-cols-2">
-              <input type="hidden" name="id" value={course.id} />
-              <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="name">Nome</Label>
-                <Input id="name" name="name" required defaultValue={course.name} />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="nrCode">Código da NR</Label>
-                <Input id="nrCode" name="nrCode" defaultValue={course.nrCode ?? ""} />
-              </div>
-              <div className="grid gap-2">
-                <Label>Duração padrão</Label>
-                <DurationInput
-                  valueName="defaultDurationValue"
-                  unitName="defaultDurationUnit"
-                  defaultUnit={durationUnit}
-                  defaultValue={durationValue}
-                />
-              </div>
-              <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Textarea id="description" name="description" defaultValue={course.description ?? ""} />
-              </div>
-              <div className="flex items-center gap-2 sm:col-span-2">
-                <Checkbox id="isActive" name="isActive" value="on" defaultChecked={course.isActive} />
-                <Label htmlFor="isActive" className="font-normal">
-                  Disponível para criar novas turmas
-                </Label>
-              </div>
-              <div className="sm:col-span-2">
-                <SubmitButton pendingText="Salvando…">Salvar alterações</SubmitButton>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle>Dados do treinamento</CardTitle>
+          <CardDescription>
+            Para editar, use “Editar dados” na listagem de Treinamentos.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="text-xs text-muted-foreground">Duração padrão</p>
+            <p className="font-medium">{formatDuration(course.defaultDurationMinutes)}</p>
+          </div>
+          <div className="sm:col-span-2">
+            <p className="text-xs text-muted-foreground">Descrição</p>
+            <p className="font-medium">
+              {course.description || <span className="text-muted-foreground">Não informada</span>}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {canEdit && (
         <Card>
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
-              <Video className="size-4 text-muted-foreground" />
+              <VideoCamera size={16} className="text-muted-foreground" />
               Vídeo do treinamento
             </CardTitle>
             <CardDescription>
@@ -174,7 +146,7 @@ export default async function CourseDetailPage({
         <Card>
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
-              <PenLine className="size-4 text-muted-foreground" />
+              <SignatureIcon size={16} className="text-muted-foreground" />
               Instrutor e assinatura
             </CardTitle>
             <CardDescription>
@@ -265,7 +237,7 @@ export default async function CourseDetailPage({
             <form action={deleteCourse}>
               <input type="hidden" name="id" value={course.id} />
               <Button type="submit" variant="destructive" disabled={sessions.length > 0}>
-                <Trash2 />
+                <Trash size={16} />
                 Excluir treinamento
               </Button>
             </form>
