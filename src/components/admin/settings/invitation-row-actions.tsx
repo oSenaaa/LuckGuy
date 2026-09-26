@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, XCircle } from "lucide-react";
+import { CircleNotch, XCircle } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { revokeInvitation } from "@/app/admin/settings/actions";
@@ -37,7 +37,7 @@ export function InvitationRowActions({ invitationId }: { invitationId: string })
       onClick={handleRevoke}
       className="text-destructive hover:text-destructive"
     >
-      {pending ? <Loader2 className="animate-spin" /> : <XCircle />}
+      {pending ? <CircleNotch size={16} className="animate-spin" /> : <XCircle size={16} />}
       Revogar convite
     </Button>
   );

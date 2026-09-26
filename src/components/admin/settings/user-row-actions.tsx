@@ -2,7 +2,14 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, MoreVertical, ShieldCheck, ShieldOff, Trash2, UserCog } from "lucide-react";
+import {
+  CircleNotch,
+  DotsThreeVertical,
+  ShieldCheck,
+  ShieldSlash,
+  Trash,
+  UserGear,
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { deleteUser, restoreAccess, revokeAccess, updateUserRole } from "@/app/admin/settings/actions";
@@ -83,12 +90,16 @@ export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowA
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon-sm" disabled={pending} aria-label="Ações do usuário">
-            {pending ? <Loader2 className="animate-spin" /> : <MoreVertical />}
+            {pending ? (
+              <CircleNotch size={20} className="animate-spin" />
+            ) : (
+              <DotsThreeVertical size={20} />
+            )}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuItem onSelect={() => setRoleOpen(true)}>
-            <UserCog />
+            <UserGear size={16} />
             Alterar permissão
           </DropdownMenuItem>
 
@@ -96,7 +107,7 @@ export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowA
 
           {banned ? (
             <DropdownMenuItem onSelect={() => run(() => restoreAccess(userId), "Acesso restaurado.")}>
-              <ShieldCheck />
+              <ShieldCheck size={16} />
               Restaurar acesso
             </DropdownMenuItem>
           ) : (
@@ -104,7 +115,7 @@ export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowA
               variant="destructive"
               onSelect={() => run(() => revokeAccess(userId), "Acesso revogado.")}
             >
-              <ShieldOff />
+              <ShieldSlash size={16} />
               Revogar acesso
             </DropdownMenuItem>
           )}
@@ -112,7 +123,7 @@ export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowA
           <DropdownMenuSeparator />
 
           <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
-            <Trash2 />
+            <Trash size={16} />
             Excluir usuário
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -146,7 +157,7 @@ export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowA
             )}
             <div>
               <Button type="submit" disabled={rolePending}>
-                {rolePending && <Loader2 className="animate-spin" />}
+                {rolePending && <CircleNotch size={16} className="animate-spin" />}
                 {rolePending ? "Salvando…" : "Salvar"}
               </Button>
             </div>
@@ -174,7 +185,7 @@ export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowA
                 setDeleteOpen(false);
               }}
             >
-              {pending && <Loader2 className="animate-spin" />}
+              {pending && <CircleNotch size={16} className="animate-spin" />}
               Excluir
             </Button>
           </div>
