@@ -1,6 +1,6 @@
-import { and, eq, inArray, lt } from "drizzle-orm";
+import { and, count, eq, inArray, lt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { companies, courseSessionCompanies, courseSessions } from "@/lib/db/schema";
+import { companies, courseSessionCompanies, courseSessions, participants } from "@/lib/db/schema";
 
 /**
  * Published sessions whose end date has already passed get moved to
@@ -16,29 +16,60 @@ export async function archiveExpiredSessions() {
 }
 
 /**
- * Uma turma pode ter várias empresas. Retorna, por turma, os nomes já
- * juntos numa string ("Empresa A, Empresa B") para exibir em listagens sem
- * precisar de GROUP BY na query principal (que muda de forma em cada tela).
- * Sem `sessionIds`, busca para todas as turmas (uso em listagens gerais).
+ * Uma turma pode ter várias empresas. Retorna, por turma, a lista de
+ * empresas vinculadas (id + nome). Sem `sessionIds`, busca para todas as
+ * turmas (uso em listagens gerais).
  */
-export async function getCompanyNamesBySessionId(sessionIds?: string[]) {
-  if (sessionIds && sessionIds.length === 0) return new Map<string, string>();
+export async function getCompaniesBySessionId(sessionIds?: string[]) {
+  if (sessionIds && sessionIds.length === 0) return new Map<string, { id: string; name: string }[]>();
 
   const rows = await getDb()
     .select({
       sessionId: courseSessionCompanies.courseSessionId,
+      companyId: companies.id,
       companyName: companies.name,
     })
     .from(courseSessionCompanies)
     .innerJoin(companies, eq(companies.id, courseSessionCompanies.companyId))
     .where(sessionIds ? inArray(courseSessionCompanies.courseSessionId, sessionIds) : undefined);
 
-  const namesBySession = new Map<string, string[]>();
+  const companiesBySession = new Map<string, { id: string; name: string }[]>();
   for (const row of rows) {
-    const names = namesBySession.get(row.sessionId) ?? [];
-    names.push(row.companyName);
-    namesBySession.set(row.sessionId, names);
+    const list = companiesBySession.get(row.sessionId) ?? [];
+    list.push({ id: row.companyId, name: row.companyName });
+    companiesBySession.set(row.sessionId, list);
   }
 
-  return new Map([...namesBySession].map(([sessionId, names]) => [sessionId, names.join(", ")]));
+  return companiesBySession;
+}
+
+/**
+ * Mesmos dados de `getCompaniesBySessionId`, já juntos numa string
+ * ("Empresa A, Empresa B") para exibir em listagens sem precisar de
+ * GROUP BY na query principal (que muda de forma em cada tela).
+ */
+export async function getCompanyNamesBySessionId(sessionIds?: string[]) {
+  const companiesBySession = await getCompaniesBySessionId(sessionIds);
+  return new Map(
+    [...companiesBySession].map(([sessionId, list]) => [
+      sessionId,
+      list.map((company) => company.name).join(", "),
+    ]),
+  );
+}
+
+/**
+ * Quantidade de participantes cadastrados por turma. Sem `sessionIds`,
+ * busca para todas as turmas.
+ */
+export async function getParticipantCountsBySessionId(sessionIds?: string[]) {
+  if (sessionIds && sessionIds.length === 0) return new Map<string, number>();
+
+  const rows = await getDb()
+    .select({ sessionId: participants.courseSessionId, value: count() })
+    .from(participants)
+    .where(sessionIds ? inArray(participants.courseSessionId, sessionIds) : undefined)
+    .groupBy(participants.courseSessionId);
+
+  return new Map(rows.map((row) => [row.sessionId, Number(row.value)]));
 }

@@ -1,15 +1,15 @@
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/admin/status-badge";
 
-const MAP: Record<
+const STATUS_MAP: Record<
   string,
-  { label: string; variant: React.ComponentProps<typeof Badge>["variant"] }
+  { status: "active" | "draft" | "ended"; label: string }
 > = {
-  draft: { label: "Rascunho", variant: "secondary" },
-  published: { label: "Publicada", variant: "default" },
-  archived: { label: "Arquivada", variant: "outline" },
+  draft: { status: "draft", label: "Rascunho" },
+  published: { status: "active", label: "Publicada" },
+  archived: { status: "ended", label: "Encerrada" },
 };
 
 export function SessionStatusBadge({ status }: { status: string }) {
-  const item = MAP[status] ?? { label: status, variant: "secondary" as const };
-  return <Badge variant={item.variant}>{item.label}</Badge>;
+  const item = STATUS_MAP[status] ?? { status: "draft" as const, label: status };
+  return <StatusBadge status={item.status}>{item.label}</StatusBadge>;
 }
