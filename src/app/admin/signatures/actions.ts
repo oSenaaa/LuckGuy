@@ -78,6 +78,87 @@ export async function createSignature(formData: FormData) {
   return { ok: true as const };
 }
 
+export async function updateSignature(id: string, formData: FormData) {
+  await requireEditor();
+  if (!id) return { ok: false as const, error: "Assinatura inválida." };
+
+  const coordinatorName = String(formData.get("coordinatorName") ?? "").trim();
+  const coordinatorRole = String(formData.get("coordinatorRole") ?? "").trim() || null;
+  const isDefault = formData.get("isDefault") === "on";
+  const newImageBlobUrl = String(formData.get("signatureImageBlobUrl") ?? "").trim();
+
+  if (!coordinatorName) {
+    return { ok: false as const, error: "Nome do coordenador é obrigatório." };
+  }
+  if (coordinatorName.length > 120 || (coordinatorRole?.length ?? 0) > 120) {
+    return { ok: false as const, error: "Nome e cargo devem ter no máximo 120 caracteres." };
+  }
+
+  const db = getDb();
+  const [existing] = await db
+    .select()
+    .from(certificateSignatures)
+    .where(eq(certificateSignatures.id, id))
+    .limit(1);
+  if (!existing) return { ok: false as const, error: "Assinatura não encontrada." };
+
+  let signatureImageBlobUrl = existing.signatureImageBlobUrl;
+  if (newImageBlobUrl) {
+    try {
+      const image = await verifyUploadedImage(
+        newImageBlobUrl,
+        SIGNATURE_UPLOAD_PREFIX,
+        SIGNATURE_IMAGE_MAX_SIZE_BYTES,
+        SIGNATURE_IMAGE_MAX_SIZE_LABEL,
+      );
+      signatureImageBlobUrl = image.url;
+    } catch (error) {
+      console.error("Falha ao validar a imagem da assinatura", error);
+      return {
+        ok: false as const,
+        error:
+          error instanceof UploadedImageError
+            ? error.message
+            : "Não foi possível confirmar a imagem enviada.",
+      };
+    }
+  }
+
+  try {
+    const update = db
+      .update(certificateSignatures)
+      .set({
+        coordinatorName,
+        coordinatorRole,
+        signatureImageBlobUrl,
+        isDefault,
+        updatedAt: new Date(),
+      })
+      .where(eq(certificateSignatures.id, id));
+
+    if (isDefault && !existing.isDefault) {
+      await db.batch([
+        db
+          .update(certificateSignatures)
+          .set({ isDefault: false })
+          .where(eq(certificateSignatures.isDefault, true)),
+        update,
+      ]);
+    } else {
+      await update;
+    }
+  } catch (error) {
+    console.error("Falha ao atualizar a assinatura", error);
+    return {
+      ok: false as const,
+      error: "Não foi possível salvar as alterações. Tente novamente.",
+    };
+  }
+
+  revalidatePath("/admin/signatures");
+  return { ok: true as const };
+}
+
 export async function setDefaultSignature(id: string) {
   await requireEditor();
   if (!id) return { ok: false as const, error: "Assinatura inválida." };
