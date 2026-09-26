@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { formatWorkload } from "@/lib/workload";
 
-type Course = {
+export type Course = {
   id: string;
   name: string;
   hasVideo: boolean;

@@ -3,13 +3,8 @@ import { redirect } from "next/navigation";
 
 import { getDb } from "@/lib/db";
 import { companies, companyWorkplaces, courses } from "@/lib/db/schema";
-import { createSession } from "../actions";
-import { CompanySelector } from "./company-selector";
-import { CourseAndDurationFields } from "./course-and-duration-fields";
+import { CreateSessionForm } from "./create-session-form";
 import { PageHeader } from "@/components/admin/page-header";
-import { SubmitButton } from "@/components/ui/submit-button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { getCurrentRole } from "@/lib/permissions";
 import {
   Card,
@@ -54,48 +49,17 @@ export default async function NewSessionPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={createSession} className="grid gap-4">
-            <CourseAndDurationFields
-              courses={courseList.map((course) => ({
-                id: course.id,
-                name: course.name,
-                hasVideo:
-                  (course.videoProvider === "blob" && Boolean(course.videoBlobUrl)) ||
-                  (course.videoProvider === "youtube" && Boolean(course.videoYoutubeId)),
-                defaultDurationMinutes: course.defaultDurationMinutes,
-              }))}
-            />
-
-            <div className="grid gap-2">
-              <Label>Empresas clientes</Label>
-              <CompanySelector companies={companiesWithWorkplaces} />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="name">Nome da turma</Label>
-              <Input
-                id="name"
-                name="name"
-                required
-                placeholder="Ex: NR-01 - Agosto/2026 - Empresa X"
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="startsAt">Início (opcional, horário de Brasília)</Label>
-                <Input id="startsAt" name="startsAt" type="datetime-local" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="endsAt">Fim (opcional, horário de Brasília)</Label>
-                <Input id="endsAt" name="endsAt" type="datetime-local" />
-              </div>
-            </div>
-
-            <div>
-              <SubmitButton pendingText="Criando…">Criar turma</SubmitButton>
-            </div>
-          </form>
+          <CreateSessionForm
+            courses={courseList.map((course) => ({
+              id: course.id,
+              name: course.name,
+              hasVideo:
+                (course.videoProvider === "blob" && Boolean(course.videoBlobUrl)) ||
+                (course.videoProvider === "youtube" && Boolean(course.videoYoutubeId)),
+              defaultDurationMinutes: course.defaultDurationMinutes,
+            }))}
+            companies={companiesWithWorkplaces}
+          />
         </CardContent>
       </Card>
     </div>

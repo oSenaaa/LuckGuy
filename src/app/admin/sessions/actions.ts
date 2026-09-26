@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { getDb } from "@/lib/db";
@@ -31,16 +30,21 @@ export async function createSession(formData: FormData) {
   const endsAtRaw = String(formData.get("endsAt") ?? "");
 
   if (!courseId || companyIds.length === 0 || !name) {
-    throw new Error("Preencha treinamento, ao menos uma empresa e nome da turma");
+    return {
+      ok: false as const,
+      error: "Preencha treinamento, ao menos uma empresa e nome da turma.",
+    };
   }
 
   const db = getDb();
   const [course] = await db.select().from(courses).where(eq(courses.id, courseId)).limit(1);
-  if (!course) throw new Error("Treinamento não encontrado");
+  if (!course) return { ok: false as const, error: "Treinamento não encontrado." };
   if (!course.defaultDurationMinutes) {
-    throw new Error(
-      "Este treinamento não tem duração padrão cadastrada. Configure em Treinamentos antes de criar a turma.",
-    );
+    return {
+      ok: false as const,
+      error:
+        "Este treinamento não tem duração padrão cadastrada. Configure em Treinamentos antes de criar a turma.",
+    };
   }
   const workloadHours = course.defaultDurationMinutes / 60;
 
@@ -88,10 +92,14 @@ export async function createSession(formData: FormData) {
     );
   }
 
-  await db.batch(batch as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
+  try {
+    await db.batch(batch as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
+  } catch {
+    return { ok: false as const, error: "Não foi possível criar a turma. Tente novamente." };
+  }
 
   revalidatePath("/admin/sessions");
-  redirect(`/admin/sessions/${sessionId}`);
+  return { ok: true as const, sessionId };
 }
 
 export async function publishSession(id: string) {

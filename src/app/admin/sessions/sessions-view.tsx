@@ -32,7 +32,7 @@ export function SessionsView({
         )}
       </PageHeader>
 
-      <SessionList sessions={sessions} companies={companies} />
+      <SessionList sessions={sessions} companies={companies} canEdit={canEdit} />
     </div>
   );
 }

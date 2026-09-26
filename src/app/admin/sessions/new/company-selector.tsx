@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 type Workplace = { id: string; name: string };
-type Company = { id: string; name: string; workplaces: Workplace[] };
+export type Company = { id: string; name: string; workplaces: Workplace[] };
 type PendingWorkplace = { key: string; companyId: string; name: string };
 
 export function CompanySelector({ companies }: { companies: Company[] }) {

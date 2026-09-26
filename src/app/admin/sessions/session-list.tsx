@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { MagnifyingGlass, UsersThree } from "@phosphor-icons/react";
+import { MagnifyingGlass, Plus, UsersThree } from "@phosphor-icons/react";
 
 import { normalizeText } from "@/lib/text";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -65,11 +66,19 @@ export type Session = {
   participantCount: number;
 };
 
-function EmptyState({ title }: { title: string }) {
+function EmptyState({ title, canEdit }: { title: string; canEdit: boolean }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
       <UsersThree size={32} className="text-muted-foreground" />
       <p className="text-sm text-muted-foreground">{title}</p>
+      {canEdit && (
+        <Button asChild variant="outline" size="sm">
+          <Link href="/admin/sessions/new">
+            <Plus size={16} />
+            Nova turma
+          </Link>
+        </Button>
+      )}
     </div>
   );
 }
@@ -77,9 +86,11 @@ function EmptyState({ title }: { title: string }) {
 export function SessionList({
   sessions,
   companies,
+  canEdit,
 }: {
   sessions: Session[];
   companies: Company[];
+  canEdit: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -157,7 +168,7 @@ export function SessionList({
 
       <div className="rounded-lg border border-border">
         {sessions.length === 0 ? (
-          <EmptyState title="Nenhuma turma criada ainda." />
+          <EmptyState title="Nenhuma turma criada ainda." canEdit={canEdit} />
         ) : filtered.length === 0 ? (
           <p className="px-4 py-16 text-center text-sm text-muted-foreground">
             Nenhuma turma encontrada para esses filtros.
