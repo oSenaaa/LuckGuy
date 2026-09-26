@@ -16,6 +16,15 @@ import { SignatureFormDialog, type SignatureFormValue } from "./signature-form-d
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function SignatureCard({
   signature,
@@ -29,6 +38,7 @@ export function SignatureCard({
   const router = useRouter();
   const [pending, setPending] = useState<"default" | "remove" | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
 
   async function run(
     action: () => Promise<{ ok: boolean; error?: string } | undefined>,
@@ -140,9 +150,7 @@ export function SignatureCard({
                   }
                   aria-label={`Remover assinatura de ${signature.coordinatorName}`}
                   disabled={pending !== null || signature.isDefault}
-                  onClick={() =>
-                    run(() => archiveSignature(signature.id), "Assinatura removida.", "remove")
-                  }
+                  onClick={() => setRemoveOpen(true)}
                 >
                   {pending === "remove" ? (
                     <CircleNotch size={16} className="animate-spin" />
@@ -159,6 +167,32 @@ export function SignatureCard({
       {canEdit && (
         <SignatureFormDialog open={editOpen} onOpenChange={setEditOpen} signature={signature} />
       )}
+
+      <AlertDialog open={removeOpen} onOpenChange={setRemoveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover assinatura</AlertDialogTitle>
+            <AlertDialogDescription>
+              A assinatura de {signature.coordinatorName} deixa de aparecer para uso em novos
+              treinamentos. É possível desarquivar depois.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending !== null}>Cancelar</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={pending !== null}
+              onClick={async () => {
+                await run(() => archiveSignature(signature.id), "Assinatura removida.", "remove");
+                setRemoveOpen(false);
+              }}
+            >
+              {pending === "remove" && <CircleNotch size={16} className="animate-spin" />}
+              Remover
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

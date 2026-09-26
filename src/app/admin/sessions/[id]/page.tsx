@@ -162,6 +162,7 @@ export default async function SessionDetailPage({
           <Card>
             <SessionPeriodPanel
               sessionId={session.id}
+              sessionName={session.name}
               status={session.status}
               startsAt={session.startsAt}
               endsAt={session.endsAt}

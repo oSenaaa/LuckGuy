@@ -15,6 +15,15 @@ import { toast } from "sonner";
 import { deleteUser, restoreAccess, revokeAccess, updateUserRole } from "@/app/admin/settings/actions";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -33,18 +42,20 @@ import { ROLE_LABELS, type Role } from "@/lib/roles";
 
 type UserRowActionsProps = {
   userId: string;
+  userName: string;
   role: Role | null;
   banned: boolean;
   isCurrentUser: boolean;
 };
 
-export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowActionsProps) {
+export function UserRowActions({ userId, userName, role, banned, isCurrentUser }: UserRowActionsProps) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [roleOpen, setRoleOpen] = useState(false);
   const [rolePending, setRolePending] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [revokeOpen, setRevokeOpen] = useState(false);
 
   if (isCurrentUser) return null;
 
@@ -111,10 +122,7 @@ export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowA
               Restaurar acesso
             </DropdownMenuItem>
           ) : (
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={() => run(() => revokeAccess(userId), "Acesso revogado.")}
-            >
+            <DropdownMenuItem variant="destructive" onSelect={() => setRevokeOpen(true)}>
               <ShieldSlash size={16} />
               Revogar acesso
             </DropdownMenuItem>
@@ -165,18 +173,41 @@ export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowA
         </DialogContent>
       </Dialog>
 
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Excluir usuário</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Esta ação exclui a conta permanentemente e não pode ser desfeita.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={pending}>
-              Cancelar
+      <AlertDialog open={revokeOpen} onOpenChange={setRevokeOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revogar acesso</AlertDialogTitle>
+            <AlertDialogDescription>
+              {userName} não vai conseguir mais entrar no painel até que o acesso seja restaurado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>Cancelar</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={pending}
+              onClick={async () => {
+                await run(() => revokeAccess(userId), "Acesso revogado.");
+                setRevokeOpen(false);
+              }}
+            >
+              {pending && <CircleNotch size={16} className="animate-spin" />}
+              Revogar acesso
             </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir usuário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Excluir {userName} apaga a conta permanentemente e não pode ser desfeito.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>Cancelar</AlertDialogCancel>
             <Button
               variant="destructive"
               disabled={pending}
@@ -188,9 +219,9 @@ export function UserRowActions({ userId, role, banned, isCurrentUser }: UserRowA
               {pending && <CircleNotch size={16} className="animate-spin" />}
               Excluir
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

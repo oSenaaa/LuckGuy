@@ -216,7 +216,11 @@ export default async function CourseDetailPage({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DeleteCourseButton courseId={course.id} disabled={sessions.length > 0} />
+            <DeleteCourseButton
+              courseId={course.id}
+              courseName={course.name}
+              disabled={sessions.length > 0}
+            />
           </CardContent>
         </Card>
       )}

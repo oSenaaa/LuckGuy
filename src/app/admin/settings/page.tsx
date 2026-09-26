@@ -55,15 +55,17 @@ export default async function SettingsPage() {
                       ? user.publicMetadata.role
                       : null;
                     const isCurrentUser = user.id === current.userId;
+                    const userName =
+                      user.fullName?.trim() ||
+                      (typeof user.publicMetadata.name === "string" ? user.publicMetadata.name : "") ||
+                      "Sem nome";
                     return (
                       <li
                         key={user.id}
                         className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
                       >
                         <div className="min-w-0">
-                          <p className="truncate font-medium">
-                            {user.fullName?.trim() || user.publicMetadata.name || "Sem nome"}
-                          </p>
+                          <p className="truncate font-medium">{userName}</p>
                           <div className="mt-1 flex flex-wrap items-center gap-1.5">
                             <Badge variant="outline">
                               {role ? ROLE_LABELS[role] : "Sem permissão"}
@@ -74,6 +76,7 @@ export default async function SettingsPage() {
                         </div>
                         <UserRowActions
                           userId={user.id}
+                          userName={userName}
                           role={role}
                           banned={user.banned}
                           isCurrentUser={isCurrentUser}
@@ -135,7 +138,10 @@ export default async function SettingsPage() {
                             </Badge>
                           )}
                         </div>
-                        <InvitationRowActions invitationId={invitation.id} />
+                        <InvitationRowActions
+                          invitationId={invitation.id}
+                          invitationLabel={name ?? invitation.emailAddress}
+                        />
                       </li>
                     );
                   })}
