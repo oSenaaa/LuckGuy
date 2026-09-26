@@ -1,22 +1,20 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { Signature as SignatureIcon, Trash, VideoCamera } from "@phosphor-icons/react/dist/ssr";
+import { Plus, Signature as SignatureIcon, UsersThree, VideoCamera } from "@phosphor-icons/react/dist/ssr";
 
 import { getDb } from "@/lib/db";
 import { certificateSignatures, courses, courseSessions } from "@/lib/db/schema";
 import { getCompanyNamesBySessionId } from "@/lib/sessions";
-import { deleteCourse, setCourseSignature } from "../actions";
 import { VideoUpload } from "./video-upload";
 import { YoutubeVideoForm } from "./youtube-video-form";
+import { CourseSignatureForm } from "./course-signature-form";
+import { DeleteCourseButton } from "./delete-course-button";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
 import { StatusBadge } from "@/components/admin/status-badge";
-import { SubmitButton } from "@/components/ui/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
 import { getCurrentRole } from "@/lib/permissions";
 import {
   Card,
@@ -154,38 +152,11 @@ export default async function CourseDetailPage({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form action={setCourseSignature} className="grid gap-4 sm:grid-cols-2">
-              <input type="hidden" name="id" value={course.id} />
-              <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="coordinatorSignatureId">Instrutor</Label>
-                <NativeSelect
-                  id="coordinatorSignatureId"
-                  name="coordinatorSignatureId"
-                  defaultValue={course.coordinatorSignatureId ?? ""}
-                >
-                  <option value="">Usar assinatura padrão automaticamente</option>
-                  {signatureList.map((signature) => (
-                    <option key={signature.id} value={signature.id}>
-                      {signature.coordinatorName}
-                      {signature.coordinatorRole ? ` — ${signature.coordinatorRole}` : ""}
-                      {signature.isDefault ? " (padrão)" : ""}
-                    </option>
-                  ))}
-                </NativeSelect>
-                {signatureList.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Nenhuma assinatura cadastrada ainda. Cadastre uma em{" "}
-                    <Link href="/admin/signatures" className="underline underline-offset-4">
-                      Assinaturas
-                    </Link>
-                    .
-                  </p>
-                )}
-              </div>
-              <div className="sm:col-span-2">
-                <SubmitButton pendingText="Salvando…">Salvar instrutor</SubmitButton>
-              </div>
-            </form>
+            <CourseSignatureForm
+              courseId={course.id}
+              coordinatorSignatureId={course.coordinatorSignatureId}
+              signatureList={signatureList}
+            />
           </CardContent>
         </Card>
       )}
@@ -199,9 +170,20 @@ export default async function CourseDetailPage({
         </CardHeader>
         <CardContent className="p-0">
           {sessions.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Nenhuma turma criada com este treinamento ainda.
-            </p>
+            <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+              <UsersThree size={32} className="text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                Nenhuma turma criada com este treinamento ainda.
+              </p>
+              {canEdit && (
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/admin/sessions/new">
+                    <Plus size={16} />
+                    Nova turma
+                  </Link>
+                </Button>
+              )}
+            </div>
           ) : (
             <ul className="divide-y divide-border">
               {sessions.map((session) => (
@@ -234,13 +216,7 @@ export default async function CourseDetailPage({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form action={deleteCourse}>
-              <input type="hidden" name="id" value={course.id} />
-              <Button type="submit" variant="destructive" disabled={sessions.length > 0}>
-                <Trash size={16} />
-                Excluir treinamento
-              </Button>
-            </form>
+            <DeleteCourseButton courseId={course.id} disabled={sessions.length > 0} />
           </CardContent>
         </Card>
       )}

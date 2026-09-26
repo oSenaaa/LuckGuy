@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { courses, courseSessions } from "@/lib/db/schema";
@@ -116,12 +115,17 @@ export async function setCourseSignature(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const coordinatorSignatureId = String(formData.get("coordinatorSignatureId") ?? "").trim() || null;
 
-  await getDb()
-    .update(courses)
-    .set({ coordinatorSignatureId, updatedAt: new Date() })
-    .where(eq(courses.id, id));
+  try {
+    await getDb()
+      .update(courses)
+      .set({ coordinatorSignatureId, updatedAt: new Date() })
+      .where(eq(courses.id, id));
+  } catch {
+    return { ok: false as const, error: "Não foi possível salvar o instrutor." };
+  }
 
   revalidatePath(`/admin/courses/${id}`);
+  return { ok: true as const };
 }
 
 export async function deleteCourse(formData: FormData) {
@@ -134,12 +138,15 @@ export async function deleteCourse(formData: FormData) {
     .where(eq(courseSessions.courseId, id))
     .limit(1);
   if (linkedSession) {
-    throw new Error("Não é possível excluir: existem turmas vinculadas a este treinamento.");
+    return {
+      ok: false as const,
+      error: "Não é possível excluir: existem turmas vinculadas a este treinamento.",
+    };
   }
 
   await getDb().delete(courses).where(eq(courses.id, id));
   revalidatePath("/admin/courses");
-  redirect("/admin/courses");
+  return { ok: true as const };
 }
 
 export async function setCourseVideo(courseId: string, videoBlobUrl: string, videoDurationSeconds: number) {
