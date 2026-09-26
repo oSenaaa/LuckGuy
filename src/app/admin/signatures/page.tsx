@@ -7,6 +7,7 @@ import { SignatureRowActions } from "./signature-row-actions";
 import { SignatureUploadForm } from "./signature-upload-form";
 import { PageHeader } from "@/components/admin/page-header";
 import { Badge } from "@/components/ui/badge";
+import { getCurrentRole } from "@/lib/permissions";
 import {
   Card,
   CardContent,
@@ -15,6 +16,9 @@ import {
 } from "@/components/ui/card";
 
 export default async function SignaturesPage() {
+  const current = await getCurrentRole();
+  const canEdit = current?.role !== "viewer";
+
   const list = await getDb()
     .select()
     .from(certificateSignatures)
@@ -31,7 +35,7 @@ export default async function SignaturesPage() {
         description="Assinatura sobreposta no certificado emitido."
       />
 
-      <SignatureUploadForm />
+      {canEdit && <SignatureUploadForm />}
 
       <Card>
         <CardHeader className="border-b">
@@ -65,6 +69,7 @@ export default async function SignaturesPage() {
                       signatureImageBlobUrl={signature.signatureImageBlobUrl}
                       isDefault={signature.isDefault}
                       isArchived={false}
+                      canEdit={canEdit}
                     />
                   </li>
                 ))}
@@ -93,6 +98,7 @@ export default async function SignaturesPage() {
                           signatureImageBlobUrl={signature.signatureImageBlobUrl}
                           isDefault={signature.isDefault}
                           isArchived
+                          canEdit={canEdit}
                         />
                       </li>
                     ))}

@@ -15,10 +15,10 @@ import {
 import { generateAccessSlug, generateAccessPin } from "@/lib/access-slug";
 import { CertificateError, issueCertificate } from "@/lib/certificate/issue";
 import { parseBrasiliaDateTime } from "@/lib/datetime";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireEditor } from "@/lib/permissions";
 
 export async function createSession(formData: FormData) {
-  const { userId } = await requireAdmin();
+  const { userId } = await requireEditor();
   const courseId = String(formData.get("courseId") ?? "");
   const companyIds = [...new Set(formData.getAll("companyIds").map(String).filter(Boolean))];
   const existingWorkplaceIds = [
@@ -94,9 +94,8 @@ export async function createSession(formData: FormData) {
   redirect(`/admin/sessions/${sessionId}`);
 }
 
-export async function publishSession(formData: FormData) {
-  await requireAdmin();
-  const id = String(formData.get("id") ?? "");
+export async function publishSession(id: string) {
+  await requireEditor();
   const db = getDb();
   const [session] = await db
     .select({ course: courses, endsAt: courseSessions.endsAt })
@@ -109,7 +108,7 @@ export async function publishSession(formData: FormData) {
     (course?.videoProvider === "blob" && course.videoBlobUrl) ||
     (course?.videoProvider === "youtube" && course.videoYoutubeId);
   if (!hasVideo || !course?.videoDurationSeconds) {
-    throw new Error("Envie o vídeo do treinamento antes de publicar a turma");
+    return { ok: false as const, error: "Envie o vídeo do treinamento antes de publicar a turma" };
   }
 
   // A varredura de expiração (archiveExpiredSessions) arquiva de novo, na
@@ -121,24 +120,26 @@ export async function publishSession(formData: FormData) {
       timeStyle: "short",
       timeZone: "America/Sao_Paulo",
     }).format(session.endsAt);
-    throw new Error(
-      `Esta turma já passou da data de fim (${endsAtLabel}). Edite o período antes de publicar.`,
-    );
+    return {
+      ok: false as const,
+      error: `Esta turma já passou da data de fim (${endsAtLabel}). Edite o período antes de publicar.`,
+    };
   }
 
   await db.update(courseSessions).set({ status: "published" }).where(eq(courseSessions.id, id));
   revalidatePath(`/admin/sessions/${id}`);
+  return { ok: true as const };
 }
 
 export async function archiveSession(formData: FormData) {
-  await requireAdmin();
+  await requireEditor();
   const id = String(formData.get("id") ?? "");
   await getDb().update(courseSessions).set({ status: "archived" }).where(eq(courseSessions.id, id));
   revalidatePath(`/admin/sessions/${id}`);
 }
 
 export async function updateSessionPeriod(id: string, formData: FormData) {
-  await requireAdmin();
+  await requireEditor();
   if (!id) return { ok: false as const, error: "Turma inválida." };
 
   const startsAt = parseBrasiliaDateTime(String(formData.get("startsAt") ?? ""));
@@ -159,7 +160,7 @@ export async function updateSessionPeriod(id: string, formData: FormData) {
 
 export async function reissueCertificate(participantId: string, sessionId: string) {
   try {
-    await requireAdmin();
+    await requireEditor();
   } catch (err) {
     console.error("Falha ao confirmar sessão de admin ao reemitir certificado", { participantId, sessionId, error: err });
     return {

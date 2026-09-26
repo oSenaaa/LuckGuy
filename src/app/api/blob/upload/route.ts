@@ -13,7 +13,7 @@ import {
   isSignatureUploadPath,
   isTemplateUploadPath,
 } from "@/lib/upload-rules";
-import { AdminAuthError, requireAdmin } from "@/lib/require-admin";
+import { AdminAuthError, requireEditor } from "@/lib/permissions";
 
 const TEN_MINUTES_IN_MS = 10 * 60 * 1000;
 const ONE_HOUR_IN_MS = 60 * 60 * 1000;
@@ -21,7 +21,7 @@ const ONE_HOUR_IN_MS = 60 * 60 * 1000;
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     try {
-      await requireAdmin();
+      await requireEditor();
     } catch (err) {
       if (err instanceof AdminAuthError) {
         return NextResponse.json({ error: "Não autorizado." }, { status: 403 });

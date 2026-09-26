@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import type { BatchItem } from "drizzle-orm/batch";
 import { getDb } from "@/lib/db";
 import { companies, companyWorkplaces } from "@/lib/db/schema";
-import { AdminAuthError, requireAdmin } from "@/lib/require-admin";
+import { AdminAuthError, requireEditor } from "@/lib/permissions";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { parseCompanyImportWorkbook, type ParsedCompanyRow } from "@/lib/company-import";
 
@@ -13,7 +13,7 @@ const MAX_ROWS = 1000;
 export async function POST(request: Request) {
   let adminId: string;
   try {
-    ({ userId: adminId } = await requireAdmin());
+    ({ userId: adminId } = await requireEditor());
   } catch (err) {
     if (err instanceof AdminAuthError) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

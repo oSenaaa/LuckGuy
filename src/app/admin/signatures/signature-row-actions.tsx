@@ -38,6 +38,7 @@ type SignatureRowActionsProps = {
   signatureImageBlobUrl: string;
   isDefault: boolean;
   isArchived: boolean;
+  canEdit: boolean;
 };
 
 export function SignatureRowActions({
@@ -46,6 +47,7 @@ export function SignatureRowActions({
   signatureImageBlobUrl,
   isDefault,
   isArchived,
+  canEdit,
 }: SignatureRowActionsProps) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -89,7 +91,7 @@ export function SignatureRowActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          {!isArchived && !isDefault && (
+          {canEdit && !isArchived && !isDefault && (
             <DropdownMenuItem
               onSelect={() =>
                 run(() => setDefaultSignature(id), "Assinatura definida como padrão.")
@@ -100,33 +102,34 @@ export function SignatureRowActions({
             </DropdownMenuItem>
           )}
 
-          {isArchived ? (
-            <DropdownMenuItem
-              onSelect={() =>
-                run(() => unarchiveSignature(id), "Assinatura desarquivada.")
-              }
-            >
-              <ArchiveRestore />
-              Desarquivar
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem
-              disabled={isDefault}
-              title={
-                isDefault
-                  ? "Torne outra assinatura padrão antes de arquivar esta."
-                  : undefined
-              }
-              onSelect={() =>
-                run(() => archiveSignature(id), "Assinatura arquivada.")
-              }
-            >
-              <Archive />
-              Arquivar
-            </DropdownMenuItem>
-          )}
+          {canEdit &&
+            (isArchived ? (
+              <DropdownMenuItem
+                onSelect={() =>
+                  run(() => unarchiveSignature(id), "Assinatura desarquivada.")
+                }
+              >
+                <ArchiveRestore />
+                Desarquivar
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                disabled={isDefault}
+                title={
+                  isDefault
+                    ? "Torne outra assinatura padrão antes de arquivar esta."
+                    : undefined
+                }
+                onSelect={() =>
+                  run(() => archiveSignature(id), "Assinatura arquivada.")
+                }
+              >
+                <Archive />
+                Arquivar
+              </DropdownMenuItem>
+            ))}
 
-          <DropdownMenuSeparator />
+          {canEdit && <DropdownMenuSeparator />}
 
           <DropdownMenuItem onSelect={() => setPreviewOpen(true)}>
             <ArrowUpRight />

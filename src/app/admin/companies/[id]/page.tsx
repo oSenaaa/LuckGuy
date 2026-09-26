@@ -13,6 +13,7 @@ import {
 import { WorkplacesPanel } from "./workplaces-panel";
 import { PageHeader } from "@/components/admin/page-header";
 import { SessionStatusBadge } from "@/components/admin/session-status-badge";
+import { getCurrentRole } from "@/lib/permissions";
 import {
   Card,
   CardContent,
@@ -28,6 +29,8 @@ export default async function CompanyDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const current = await getCurrentRole();
+  const canEdit = current?.role !== "viewer";
   const db = getDb();
 
   const [company] = await db
@@ -114,7 +117,7 @@ export default async function CompanyDetailPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <WorkplacesPanel companyId={company.id} workplaces={workplaces} />
+          <WorkplacesPanel companyId={company.id} workplaces={workplaces} canEdit={canEdit} />
         </CardContent>
       </Card>
 

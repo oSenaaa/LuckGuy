@@ -38,6 +38,7 @@ type TemplateRowActionsProps = {
   backgroundImageBlobUrl: string;
   isDefault: boolean;
   isArchived: boolean;
+  canEdit: boolean;
 };
 
 export function TemplateRowActions({
@@ -46,6 +47,7 @@ export function TemplateRowActions({
   backgroundImageBlobUrl,
   isDefault,
   isArchived,
+  canEdit,
 }: TemplateRowActionsProps) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -89,7 +91,7 @@ export function TemplateRowActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          {!isArchived && !isDefault && (
+          {canEdit && !isArchived && !isDefault && (
             <DropdownMenuItem
               onSelect={() =>
                 run(() => setDefaultTemplate(id), "Modelo definido como padrão.")
@@ -100,33 +102,34 @@ export function TemplateRowActions({
             </DropdownMenuItem>
           )}
 
-          {isArchived ? (
-            <DropdownMenuItem
-              onSelect={() =>
-                run(() => unarchiveTemplate(id), "Modelo desarquivado.")
-              }
-            >
-              <ArchiveRestore />
-              Desarquivar
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem
-              disabled={isDefault}
-              title={
-                isDefault
-                  ? "Torne outro modelo padrão antes de arquivar este."
-                  : undefined
-              }
-              onSelect={() =>
-                run(() => archiveTemplate(id), "Modelo arquivado.")
-              }
-            >
-              <Archive />
-              Arquivar
-            </DropdownMenuItem>
-          )}
+          {canEdit &&
+            (isArchived ? (
+              <DropdownMenuItem
+                onSelect={() =>
+                  run(() => unarchiveTemplate(id), "Modelo desarquivado.")
+                }
+              >
+                <ArchiveRestore />
+                Desarquivar
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                disabled={isDefault}
+                title={
+                  isDefault
+                    ? "Torne outro modelo padrão antes de arquivar este."
+                    : undefined
+                }
+                onSelect={() =>
+                  run(() => archiveTemplate(id), "Modelo arquivado.")
+                }
+              >
+                <Archive />
+                Arquivar
+              </DropdownMenuItem>
+            ))}
 
-          <DropdownMenuSeparator />
+          {canEdit && <DropdownMenuSeparator />}
 
           <DropdownMenuItem onSelect={() => setPreviewOpen(true)}>
             <ArrowUpRight />

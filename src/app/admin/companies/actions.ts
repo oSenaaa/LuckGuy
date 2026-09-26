@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { companies, companyWorkplaces } from "@/lib/db/schema";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireEditor } from "@/lib/permissions";
 import { isValidCpfCnpj, onlyDigits } from "@/lib/document";
 import { DEFAULT_PHONE_COUNTRY, buildPhoneValue } from "@/lib/phone";
 
@@ -37,7 +37,7 @@ function validatePhone(country: string, national: string) {
 }
 
 export async function createCompany(formData: FormData) {
-  await requireAdmin();
+  await requireEditor();
   const name = String(formData.get("name") ?? "").trim();
   const document = readDocument(formData);
   const contactEmail = String(formData.get("contactEmail") ?? "").trim() || null;
@@ -66,7 +66,7 @@ export async function createCompany(formData: FormData) {
 }
 
 export async function updateCompany(id: string, formData: FormData) {
-  await requireAdmin();
+  await requireEditor();
   if (!id) return { ok: false as const, error: "Empresa inválida." };
 
   const name = String(formData.get("name") ?? "").trim();
@@ -106,7 +106,7 @@ export async function updateCompany(id: string, formData: FormData) {
 }
 
 export async function archiveCompany(id: string) {
-  await requireAdmin();
+  await requireEditor();
   if (!id) return { ok: false as const, error: "Empresa inválida." };
 
   await getDb()
@@ -118,7 +118,7 @@ export async function archiveCompany(id: string) {
 }
 
 export async function unarchiveCompany(id: string) {
-  await requireAdmin();
+  await requireEditor();
   if (!id) return { ok: false as const, error: "Empresa inválida." };
 
   await getDb()
@@ -130,7 +130,7 @@ export async function unarchiveCompany(id: string) {
 }
 
 export async function addWorkplace(companyId: string, formData: FormData) {
-  await requireAdmin();
+  await requireEditor();
   if (!companyId) return { ok: false as const, error: "Empresa inválida." };
 
   const name = String(formData.get("name") ?? "").trim();
@@ -142,7 +142,7 @@ export async function addWorkplace(companyId: string, formData: FormData) {
 }
 
 export async function updateWorkplace(id: string, formData: FormData) {
-  await requireAdmin();
+  await requireEditor();
   if (!id) return { ok: false as const, error: "Posto inválido." };
 
   const name = String(formData.get("name") ?? "").trim();
@@ -159,7 +159,7 @@ export async function updateWorkplace(id: string, formData: FormData) {
 }
 
 export async function archiveWorkplace(id: string) {
-  await requireAdmin();
+  await requireEditor();
   if (!id) return { ok: false as const, error: "Posto inválido." };
 
   const [workplace] = await getDb()
@@ -173,7 +173,7 @@ export async function archiveWorkplace(id: string) {
 }
 
 export async function unarchiveWorkplace(id: string) {
-  await requireAdmin();
+  await requireEditor();
   if (!id) return { ok: false as const, error: "Posto inválido." };
 
   const [workplace] = await getDb()

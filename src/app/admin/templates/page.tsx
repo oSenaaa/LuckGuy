@@ -7,6 +7,7 @@ import { TemplateRowActions } from "./template-row-actions";
 import { TemplateUploadForm } from "./template-upload-form";
 import { PageHeader } from "@/components/admin/page-header";
 import { Badge } from "@/components/ui/badge";
+import { getCurrentRole } from "@/lib/permissions";
 import {
   Card,
   CardContent,
@@ -15,6 +16,9 @@ import {
 } from "@/components/ui/card";
 
 export default async function TemplatesPage() {
+  const current = await getCurrentRole();
+  const canEdit = current?.role !== "viewer";
+
   const list = await getDb()
     .select()
     .from(certificateTemplates)
@@ -31,7 +35,7 @@ export default async function TemplatesPage() {
         description="Imagem de fundo padrão do certificado emitido aos participantes."
       />
 
-      <TemplateUploadForm />
+      {canEdit && <TemplateUploadForm />}
 
       <Card>
         <CardHeader className="border-b">
@@ -62,6 +66,7 @@ export default async function TemplatesPage() {
                       backgroundImageBlobUrl={template.backgroundImageBlobUrl}
                       isDefault={template.isDefault}
                       isArchived={false}
+                      canEdit={canEdit}
                     />
                   </li>
                 ))}
@@ -85,6 +90,7 @@ export default async function TemplatesPage() {
                           backgroundImageBlobUrl={template.backgroundImageBlobUrl}
                           isDefault={template.isDefault}
                           isArchived
+                          canEdit={canEdit}
                         />
                       </li>
                     ))}

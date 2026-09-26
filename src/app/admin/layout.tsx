@@ -12,6 +12,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { getCurrentRole } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -23,12 +24,15 @@ export default async function AdminLayout({
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 
+  const current = await getCurrentRole();
+  if (!current) redirect("/sem-acesso");
+
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar />
+      <AppSidebar role={current.role} />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <SidebarTrigger className="-ml-1" />

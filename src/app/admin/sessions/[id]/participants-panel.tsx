@@ -35,10 +35,12 @@ export function ParticipantsPanel({
   participants,
   sessionId,
   downloadAllHref,
+  canEdit,
 }: {
   participants: Participant[];
   sessionId: string;
   downloadAllHref: string;
+  canEdit: boolean;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -74,17 +76,19 @@ export function ParticipantsPanel({
         </CardTitle>
         {withCertificate.length > 0 && (
           <CardAction className="flex flex-wrap items-center gap-2">
-            {selected.size > 0 && (
+            {canEdit && selected.size > 0 && (
               <BulkReissueButton
                 participantIds={Array.from(selected)}
                 sessionId={sessionId}
                 label={`Reemitir selecionados (${selected.size})`}
               />
             )}
-            <BulkReissueButton
-              participantIds={withCertificate.map((p) => p.id)}
-              sessionId={sessionId}
-            />
+            {canEdit && (
+              <BulkReissueButton
+                participantIds={withCertificate.map((p) => p.id)}
+                sessionId={sessionId}
+              />
+            )}
             <Button asChild variant="outline" size="sm">
               <a href={downloadAllHref}>
                 <Download />
@@ -104,7 +108,7 @@ export function ParticipantsPanel({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
-                  {withCertificate.length > 0 && (
+                  {canEdit && withCertificate.length > 0 && (
                     <Checkbox
                       checked={allSelected}
                       onCheckedChange={toggleAll}
@@ -127,7 +131,7 @@ export function ParticipantsPanel({
               {participants.map((p) => (
                 <TableRow key={p.id} className="group">
                   <TableCell>
-                    {p.certificateUrl && (
+                    {canEdit && p.certificateUrl && (
                       <Checkbox
                         checked={selected.has(p.id)}
                         onCheckedChange={() => toggleOne(p.id)}
@@ -165,7 +169,9 @@ export function ParticipantsPanel({
                             <Download />
                           </Link>
                         </Button>
-                        <ReissueCertificateButton participantId={p.id} sessionId={sessionId} />
+                        {canEdit && (
+                          <ReissueCertificateButton participantId={p.id} sessionId={sessionId} />
+                        )}
                       </div>
                     ) : (
                       <span className="block text-right text-muted-foreground">—</span>

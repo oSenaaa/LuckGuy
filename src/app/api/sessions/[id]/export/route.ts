@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { certificates, companies, companyWorkplaces, participants, viewingProgress } from "@/lib/db/schema";
-import { AdminAuthError, requireAdmin } from "@/lib/require-admin";
+import { AdminAuthError, requireViewer } from "@/lib/permissions";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 function csvEscape(value: string) {
@@ -17,7 +17,7 @@ function csvEscape(value: string) {
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   let adminId: string;
   try {
-    ({ userId: adminId } = await requireAdmin());
+    ({ userId: adminId } = await requireViewer());
   } catch (err) {
     if (err instanceof AdminAuthError) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

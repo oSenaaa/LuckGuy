@@ -20,6 +20,7 @@ const LABELS: Record<string, string> = {
   sessions: "Turmas",
   templates: "Modelo de certificado",
   signatures: "Assinaturas",
+  settings: "Configurações",
   new: "Nova turma",
 };
 

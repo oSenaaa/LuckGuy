@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { AdminAuthError, requireAdmin } from "@/lib/require-admin";
+import { AdminAuthError, requireViewer } from "@/lib/permissions";
 import { buildCompanyImportTemplate } from "@/lib/company-import";
 
 export async function GET() {
   try {
-    await requireAdmin();
+    await requireViewer();
   } catch (err) {
     if (err instanceof AdminAuthError) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

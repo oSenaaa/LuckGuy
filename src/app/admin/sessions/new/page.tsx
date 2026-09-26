@@ -1,4 +1,5 @@
 import { eq, isNull } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import { CalendarPlus } from "lucide-react";
 
 import { getDb } from "@/lib/db";
@@ -10,6 +11,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getCurrentRole } from "@/lib/permissions";
 import {
   Card,
   CardContent,
@@ -19,6 +21,10 @@ import {
 } from "@/components/ui/card";
 
 export default async function NewSessionPage() {
+  const current = await getCurrentRole();
+  const canEdit = current?.role !== "viewer";
+  if (!canEdit) redirect("/admin/sessions");
+
   const db = getDb();
   const [courseList, companyList, workplaceList] = await Promise.all([
     db.select().from(courses).where(eq(courses.isActive, true)),

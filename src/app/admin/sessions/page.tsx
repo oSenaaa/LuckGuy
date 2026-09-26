@@ -9,8 +9,12 @@ import { PageHeader } from "@/components/admin/page-header";
 import { SessionsTable } from "@/components/admin/sessions-table";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getCurrentRole } from "@/lib/permissions";
 
 export default async function SessionsPage() {
+  const current = await getCurrentRole();
+  const canEdit = current?.role !== "viewer";
+
   await archiveExpiredSessions();
 
   const sessionList = await getDb()
@@ -39,12 +43,14 @@ export default async function SessionsPage() {
         title="Turmas"
         description="Turmas de treinamento com link de acesso para os participantes."
       >
-        <Button asChild>
-          <Link href="/admin/sessions/new">
-            <Plus />
-            Nova turma
-          </Link>
-        </Button>
+        {canEdit && (
+          <Button asChild>
+            <Link href="/admin/sessions/new">
+              <Plus />
+              Nova turma
+            </Link>
+          </Button>
+        )}
       </PageHeader>
 
       <Card>

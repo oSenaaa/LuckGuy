@@ -6,7 +6,6 @@ import {
   Archive,
   ExternalLink,
   FileSpreadsheet,
-  Send,
   Users,
   Video,
 } from "lucide-react";
@@ -21,8 +20,9 @@ import {
   participants,
   viewingProgress,
 } from "@/lib/db/schema";
-import { archiveSession, publishSession } from "../actions";
+import { archiveSession } from "../actions";
 import { ParticipantsPanel } from "./participants-panel";
+import { PublishSessionButton } from "./publish-session-button";
 import { SessionPeriodPanel } from "./session-period-panel";
 import { formatWorkload, resolveWorkloadHours } from "@/lib/workload";
 import { archiveExpiredSessions, getCompanyNamesBySessionId } from "@/lib/sessions";
@@ -31,6 +31,7 @@ import { SessionStatusBadge } from "@/components/admin/session-status-badge";
 import { CopyButton } from "@/components/copy-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getCurrentRole } from "@/lib/permissions";
 
 export default async function SessionDetailPage({
   params,
@@ -38,6 +39,8 @@ export default async function SessionDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const current = await getCurrentRole();
+  const canEdit = current?.role !== "viewer";
   const db = getDb();
 
   await archiveExpiredSessions();
@@ -129,6 +132,7 @@ export default async function SessionDetailPage({
           status={session.status}
           startsAt={session.startsAt}
           endsAt={session.endsAt}
+          canEdit={canEdit}
         />
       </Card>
 
@@ -189,26 +193,22 @@ export default async function SessionDetailPage({
               Gerenciar vídeo em {session.courseName}
             </Link>
           </p>
-          <div className="flex flex-wrap gap-2">
-            {session.status !== "published" && (
-              <form action={publishSession}>
-                <input type="hidden" name="id" value={session.id} />
-                <Button type="submit">
-                  <Send />
-                  Publicar turma
-                </Button>
-              </form>
-            )}
-            {session.status !== "archived" && (
-              <form action={archiveSession}>
-                <input type="hidden" name="id" value={session.id} />
-                <Button type="submit" variant="outline">
-                  <Archive />
-                  Arquivar
-                </Button>
-              </form>
-            )}
-          </div>
+          {canEdit && (
+            <div className="flex flex-wrap gap-2">
+              {session.status !== "published" && (
+                <PublishSessionButton sessionId={session.id} />
+              )}
+              {session.status !== "archived" && (
+                <form action={archiveSession}>
+                  <input type="hidden" name="id" value={session.id} />
+                  <Button type="submit" variant="outline">
+                    <Archive />
+                    Arquivar
+                  </Button>
+                </form>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -217,6 +217,7 @@ export default async function SessionDetailPage({
           participants={participantsList}
           sessionId={session.id}
           downloadAllHref={`/api/sessions/${id}/certificates/download`}
+          canEdit={canEdit}
         />
       </Card>
     </div>

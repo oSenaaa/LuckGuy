@@ -24,7 +24,7 @@ type Company = {
   archivedAt: Date | null;
 };
 
-function CompanyRow({ company }: { company: Company }) {
+function CompanyRow({ company, canEdit }: { company: Company; canEdit: boolean }) {
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
       <Link
@@ -37,19 +37,27 @@ function CompanyRow({ company }: { company: Company }) {
         )}
         <ArrowUpRight className="size-4 text-muted-foreground" />
       </Link>
-      <CompanyRowActions
-        id={company.id}
-        name={company.name}
-        cnpj={company.cnpj}
-        contactEmail={company.contactEmail}
-        contactPhone={company.contactPhone}
-        isArchived={Boolean(company.archivedAt)}
-      />
+      {canEdit && (
+        <CompanyRowActions
+          id={company.id}
+          name={company.name}
+          cnpj={company.cnpj}
+          contactEmail={company.contactEmail}
+          contactPhone={company.contactPhone}
+          isArchived={Boolean(company.archivedAt)}
+        />
+      )}
     </li>
   );
 }
 
-export function CompanyList({ companies }: { companies: Company[] }) {
+export function CompanyList({
+  companies,
+  canEdit,
+}: {
+  companies: Company[];
+  canEdit: boolean;
+}) {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -98,7 +106,7 @@ export function CompanyList({ companies }: { companies: Company[] }) {
           <>
             <ul className="divide-y divide-border">
               {active.map((company) => (
-                <CompanyRow key={company.id} company={company} />
+                <CompanyRow key={company.id} company={company} canEdit={canEdit} />
               ))}
             </ul>
 
@@ -109,7 +117,7 @@ export function CompanyList({ companies }: { companies: Company[] }) {
                 </summary>
                 <ul className="divide-y divide-border border-t text-muted-foreground">
                   {archived.map((company) => (
-                    <CompanyRow key={company.id} company={company} />
+                    <CompanyRow key={company.id} company={company} canEdit={canEdit} />
                   ))}
                 </ul>
               </details>

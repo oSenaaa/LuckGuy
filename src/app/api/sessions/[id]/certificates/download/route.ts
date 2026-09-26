@@ -3,7 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import JSZip from "jszip";
 import { getDb } from "@/lib/db";
 import { certificates, participants } from "@/lib/db/schema";
-import { AdminAuthError, requireAdmin } from "@/lib/require-admin";
+import { AdminAuthError, requireViewer } from "@/lib/permissions";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 function sanitizeFilename(name: string) {
@@ -18,7 +18,7 @@ function sanitizeFilename(name: string) {
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   let adminId: string;
   try {
-    ({ userId: adminId } = await requireAdmin());
+    ({ userId: adminId } = await requireViewer());
   } catch (err) {
     if (err instanceof AdminAuthError) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

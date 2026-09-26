@@ -10,10 +10,10 @@ import {
   SIGNATURE_IMAGE_MAX_SIZE_LABEL,
   SIGNATURE_UPLOAD_PREFIX,
 } from "@/lib/upload-rules";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireEditor } from "@/lib/permissions";
 
 export async function createSignature(formData: FormData) {
-  await requireAdmin();
+  await requireEditor();
   const coordinatorName = String(formData.get("coordinatorName") ?? "").trim();
   const coordinatorRole = String(formData.get("coordinatorRole") ?? "").trim() || null;
   const isDefault = formData.get("isDefault") === "on";
@@ -79,7 +79,7 @@ export async function createSignature(formData: FormData) {
 }
 
 export async function setDefaultSignature(id: string) {
-  await requireAdmin();
+  await requireEditor();
   if (!id) return { ok: false as const, error: "Assinatura inválida." };
   const db = getDb();
 
@@ -102,7 +102,7 @@ export async function setDefaultSignature(id: string) {
 }
 
 export async function archiveSignature(id: string) {
-  await requireAdmin();
+  await requireEditor();
   if (!id) return { ok: false as const, error: "Assinatura inválida." };
   const db = getDb();
 
@@ -125,7 +125,7 @@ export async function archiveSignature(id: string) {
 }
 
 export async function unarchiveSignature(id: string) {
-  await requireAdmin();
+  await requireEditor();
   if (!id) return { ok: false as const, error: "Assinatura inválida." };
   const db = getDb();
   await db

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { DocumentInput } from "@/components/ui/document-input";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
+import { getCurrentRole } from "@/lib/permissions";
 import {
   Card,
   CardContent,
@@ -21,6 +22,9 @@ import {
 } from "@/components/ui/card";
 
 export default async function CompaniesPage() {
+  const current = await getCurrentRole();
+  const canEdit = current?.role !== "viewer";
+
   const list = await getDb()
     .select()
     .from(companies)
@@ -34,49 +38,53 @@ export default async function CompaniesPage() {
         description="Cadastre as empresas que contratam os treinamentos."
       />
 
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>Nova empresa</CardTitle>
-          <CardDescription>
-            Nome e CNPJ/CPF são obrigatórios. Os postos de trabalho podem ser adicionados
-            depois, na página da empresa.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form action={createCompany} className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2 sm:col-span-2">
-              <Label htmlFor="name">Nome da empresa</Label>
-              <Input id="name" name="name" required placeholder="Ex: Construtora Alfa Ltda" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="cnpj">CNPJ ou CPF</Label>
-              <DocumentInput
-                id="cnpj"
-                name="cnpj"
-                required
-                title="Digite o CPF (11 dígitos) ou CNPJ (14 dígitos)"
-                placeholder="Somente números"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="contactEmail">E-mail de contato</Label>
-              <Input id="contactEmail" name="contactEmail" type="email" placeholder="contato@empresa.com" />
-            </div>
-            <div className="grid gap-2 sm:col-span-2">
-              <Label htmlFor="create-phone">Telefone de contato</Label>
-              <PhoneInput idPrefix="create" />
-            </div>
-            <div className="sm:col-span-2">
-              <SubmitButton pendingText="Adicionando…">Adicionar empresa</SubmitButton>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      {canEdit && (
+        <>
+          <Card>
+            <CardHeader className="border-b">
+              <CardTitle>Nova empresa</CardTitle>
+              <CardDescription>
+                Nome e CNPJ/CPF são obrigatórios. Os postos de trabalho podem ser adicionados
+                depois, na página da empresa.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form action={createCompany} className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="name">Nome da empresa</Label>
+                  <Input id="name" name="name" required placeholder="Ex: Construtora Alfa Ltda" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="cnpj">CNPJ ou CPF</Label>
+                  <DocumentInput
+                    id="cnpj"
+                    name="cnpj"
+                    required
+                    title="Digite o CPF (11 dígitos) ou CNPJ (14 dígitos)"
+                    placeholder="Somente números"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="contactEmail">E-mail de contato</Label>
+                  <Input id="contactEmail" name="contactEmail" type="email" placeholder="contato@empresa.com" />
+                </div>
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="create-phone">Telefone de contato</Label>
+                  <PhoneInput idPrefix="create" />
+                </div>
+                <div className="sm:col-span-2">
+                  <SubmitButton pendingText="Adicionando…">Adicionar empresa</SubmitButton>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
 
-      <ImportCompaniesForm />
+          <ImportCompaniesForm />
+        </>
+      )}
 
       <Card>
-        <CompanyList companies={list} />
+        <CompanyList companies={list} canEdit={canEdit} />
       </Card>
     </div>
   );

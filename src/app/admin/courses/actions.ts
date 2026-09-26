@@ -7,7 +7,7 @@ import { getDb } from "@/lib/db";
 import { courses, courseSessions } from "@/lib/db/schema";
 import { UploadedVideoError, verifyUploadedVideo } from "@/lib/blob";
 import { VIDEO_MAX_DURATION_SECONDS } from "@/lib/upload-rules";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireEditor } from "@/lib/permissions";
 
 function slugify(name: string) {
   return name
@@ -40,7 +40,7 @@ function parseDefaultDurationMinutes(formData: FormData): number | null {
 const YOUTUBE_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 
 export async function createCourse(formData: FormData) {
-  await requireAdmin();
+  await requireEditor();
   const name = String(formData.get("name") ?? "").trim();
   const nrCode = String(formData.get("nrCode") ?? "").trim() || null;
   const description = String(formData.get("description") ?? "").trim() || null;
@@ -66,7 +66,7 @@ export async function createCourse(formData: FormData) {
 }
 
 export async function updateCourse(formData: FormData) {
-  await requireAdmin();
+  await requireEditor();
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const nrCode = String(formData.get("nrCode") ?? "").trim() || null;
@@ -86,7 +86,7 @@ export async function updateCourse(formData: FormData) {
 }
 
 export async function setCourseSignature(formData: FormData) {
-  await requireAdmin();
+  await requireEditor();
   const id = String(formData.get("id") ?? "");
   const coordinatorSignatureId = String(formData.get("coordinatorSignatureId") ?? "").trim() || null;
 
@@ -99,7 +99,7 @@ export async function setCourseSignature(formData: FormData) {
 }
 
 export async function deleteCourse(formData: FormData) {
-  await requireAdmin();
+  await requireEditor();
   const id = String(formData.get("id") ?? "");
 
   const [linkedSession] = await getDb()
@@ -117,7 +117,7 @@ export async function deleteCourse(formData: FormData) {
 }
 
 export async function setCourseVideo(courseId: string, videoBlobUrl: string, videoDurationSeconds: number) {
-  await requireAdmin();
+  await requireEditor();
   if (
     !Number.isInteger(videoDurationSeconds) ||
     videoDurationSeconds <= 0 ||
@@ -165,7 +165,7 @@ export async function setCourseVideoYoutube(
   videoYoutubeId: string,
   videoDurationSeconds: number,
 ) {
-  await requireAdmin();
+  await requireEditor();
 
   if (!YOUTUBE_ID_PATTERN.test(videoYoutubeId)) {
     throw new Error("ID de vídeo do YouTube inválido.");

@@ -10,6 +10,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   PenLine,
+  Settings,
 } from "lucide-react";
 
 import { LiderLogo, LiderMark } from "@/components/brand/logo";
@@ -25,6 +26,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import type { Role } from "@/lib/roles";
 
 const NAV_ITEMS = [
   { label: "Painel", href: "/admin", icon: LayoutDashboard },
@@ -35,12 +37,17 @@ const NAV_ITEMS = [
   { label: "Assinaturas", href: "/admin/signatures", icon: PenLine },
 ] as const;
 
+const ADMIN_ONLY_NAV_ITEMS = [
+  { label: "Configurações", href: "/admin/settings", icon: Settings },
+] as const;
+
 function isActivePath(pathname: string, href: string) {
   return href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 }
 
-export function AppSidebar() {
+export function AppSidebar({ role }: { role: Role }) {
   const pathname = usePathname();
+  const navItems = role === "admin" ? [...NAV_ITEMS, ...ADMIN_ONLY_NAV_ITEMS] : NAV_ITEMS;
 
   return (
     <Sidebar collapsible="icon">
@@ -60,7 +67,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
+              {navItems.map(({ label, href, icon: Icon }) => (
                 <SidebarMenuItem key={href}>
                   <SidebarMenuButton
                     asChild

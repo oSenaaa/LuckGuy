@@ -27,7 +27,7 @@ type Workplace = {
   archivedAt: Date | null;
 };
 
-function WorkplaceRow({ workplace }: { workplace: Workplace }) {
+function WorkplaceRow({ workplace, canEdit }: { workplace: Workplace; canEdit: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -80,39 +80,41 @@ function WorkplaceRow({ workplace }: { workplace: Workplace }) {
       <span className={isArchived ? "text-muted-foreground" : "font-medium"}>
         {workplace.name}
       </span>
-      <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          disabled={pending}
-          aria-label={`Editar posto ${workplace.name}`}
-          onClick={() => {
-            setEditError(null);
-            setEditOpen(true);
-          }}
-        >
-          <Pencil />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          disabled={pending}
-          aria-label={isArchived ? `Desarquivar posto ${workplace.name}` : `Arquivar posto ${workplace.name}`}
-          onClick={() =>
-            isArchived
-              ? run(() => unarchiveWorkplace(workplace.id), "Posto desarquivado.")
-              : run(() => archiveWorkplace(workplace.id), "Posto arquivado.")
-          }
-        >
-          {pending ? (
-            <Loader2 className="animate-spin" />
-          ) : isArchived ? (
-            <ArchiveRestore />
-          ) : (
-            <Archive />
-          )}
-        </Button>
-      </div>
+      {canEdit && (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            disabled={pending}
+            aria-label={`Editar posto ${workplace.name}`}
+            onClick={() => {
+              setEditError(null);
+              setEditOpen(true);
+            }}
+          >
+            <Pencil />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            disabled={pending}
+            aria-label={isArchived ? `Desarquivar posto ${workplace.name}` : `Arquivar posto ${workplace.name}`}
+            onClick={() =>
+              isArchived
+                ? run(() => unarchiveWorkplace(workplace.id), "Posto desarquivado.")
+                : run(() => archiveWorkplace(workplace.id), "Posto arquivado.")
+            }
+          >
+            {pending ? (
+              <Loader2 className="animate-spin" />
+            ) : isArchived ? (
+              <ArchiveRestore />
+            ) : (
+              <Archive />
+            )}
+          </Button>
+        </div>
+      )}
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-sm">
@@ -151,9 +153,11 @@ function WorkplaceRow({ workplace }: { workplace: Workplace }) {
 export function WorkplacesPanel({
   companyId,
   workplaces,
+  canEdit,
 }: {
   companyId: string;
   workplaces: Workplace[];
+  canEdit: boolean;
 }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
@@ -191,27 +195,29 @@ export function WorkplacesPanel({
       ) : (
         <ul className="divide-y divide-border">
           {active.map((workplace) => (
-            <WorkplaceRow key={workplace.id} workplace={workplace} />
+            <WorkplaceRow key={workplace.id} workplace={workplace} canEdit={canEdit} />
           ))}
           {archived.map((workplace) => (
-            <WorkplaceRow key={workplace.id} workplace={workplace} />
+            <WorkplaceRow key={workplace.id} workplace={workplace} canEdit={canEdit} />
           ))}
         </ul>
       )}
 
-      <form
-        onSubmit={handleAddSubmit}
-        className="flex items-start gap-2 border-t px-4 py-3"
-      >
-        <div className="flex-1">
-          <Input name="name" placeholder="Ex: Obra Alfa - Setor Administrativo" disabled={adding} />
-          {addError && <p className="mt-1 text-xs text-destructive">{addError}</p>}
-        </div>
-        <Button type="submit" variant="outline" size="sm" disabled={adding}>
-          {adding ? <Loader2 className="animate-spin" /> : <Plus />}
-          Adicionar posto
-        </Button>
-      </form>
+      {canEdit && (
+        <form
+          onSubmit={handleAddSubmit}
+          className="flex items-start gap-2 border-t px-4 py-3"
+        >
+          <div className="flex-1">
+            <Input name="name" placeholder="Ex: Obra Alfa - Setor Administrativo" disabled={adding} />
+            {addError && <p className="mt-1 text-xs text-destructive">{addError}</p>}
+          </div>
+          <Button type="submit" variant="outline" size="sm" disabled={adding}>
+            {adding ? <Loader2 className="animate-spin" /> : <Plus />}
+            Adicionar posto
+          </Button>
+        </form>
+      )}
     </>
   );
 }

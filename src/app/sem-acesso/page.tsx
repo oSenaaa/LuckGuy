@@ -16,8 +16,8 @@ export default function NoAccessPage() {
       <StatusCard
         icon={ShieldX}
         tone="destructive"
-        title="Acesso restrito à equipe LÍDER"
-        description="Sua conta está autenticada, mas não pertence à organização autorizada ou não tem o papel de administrador. Fale com o responsável pela plataforma para receber o convite."
+        title="Acesso restrito"
+        description="Sua conta está autenticada, mas não tem permissão configurada no painel. Fale com um administrador para receber acesso."
       >
         <SignOutButton>
           <Button variant="outline" size="sm">

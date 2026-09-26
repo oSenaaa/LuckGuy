@@ -10,9 +10,9 @@ const isAdminRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   if (!isAdminRoute(req)) return;
 
-  // Sem restrição por organização por enquanto (produto single-tenant) — só
-  // exige sessão Clerk válida. Ver src/lib/require-admin.ts para o motivo e
-  // como reativar o controle por organização quando necessário.
+  // Exige apenas sessão Clerk válida — a checagem de papel (admin/editor/
+  // visualizador) fica em src/app/admin/layout.tsx e nas Server Actions/Route
+  // Handlers via src/lib/permissions.ts (defesa em profundidade).
   await auth.protect();
 });
 

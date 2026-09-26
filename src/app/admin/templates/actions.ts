@@ -10,10 +10,10 @@ import {
   TEMPLATE_IMAGE_MAX_SIZE_LABEL,
   TEMPLATE_UPLOAD_PREFIX,
 } from "@/lib/upload-rules";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireEditor } from "@/lib/permissions";
 
 export async function createTemplate(formData: FormData) {
-  await requireAdmin();
+  await requireEditor();
   const name = String(formData.get("name") ?? "").trim();
   const isDefault = formData.get("isDefault") === "on";
   const backgroundImageBlobUrl = String(formData.get("backgroundImageBlobUrl") ?? "").trim();
@@ -75,7 +75,7 @@ export async function createTemplate(formData: FormData) {
 }
 
 export async function setDefaultTemplate(id: string) {
-  await requireAdmin();
+  await requireEditor();
   if (!id) return { ok: false as const, error: "Modelo inválido." };
   const db = getDb();
 
@@ -98,7 +98,7 @@ export async function setDefaultTemplate(id: string) {
 }
 
 export async function archiveTemplate(id: string) {
-  await requireAdmin();
+  await requireEditor();
   if (!id) return { ok: false as const, error: "Modelo inválido." };
   const db = getDb();
 
@@ -121,7 +121,7 @@ export async function archiveTemplate(id: string) {
 }
 
 export async function unarchiveTemplate(id: string) {
-  await requireAdmin();
+  await requireEditor();
   if (!id) return { ok: false as const, error: "Modelo inválido." };
   const db = getDb();
   await db

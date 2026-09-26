@@ -23,11 +23,13 @@ export function SessionPeriodPanel({
   status,
   startsAt,
   endsAt,
+  canEdit,
 }: {
   sessionId: string;
   status: "draft" | "published" | "archived";
   startsAt: Date | null;
   endsAt: Date | null;
+  canEdit: boolean;
 }) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
@@ -106,32 +108,34 @@ export function SessionPeriodPanel({
             )}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 sm:col-span-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setEditError(null);
-              setEditOpen(true);
-            }}
-          >
-            <Pencil />
-            Editar período
-          </Button>
-          {status === "published" && (
+        {canEdit && (
+          <div className="flex flex-wrap gap-2 sm:col-span-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              disabled={endingNow}
-              onClick={handleEndNow}
+              onClick={() => {
+                setEditError(null);
+                setEditOpen(true);
+              }}
             >
-              {endingNow ? <Loader2 className="animate-spin" /> : <StopCircle />}
-              Encerrar turma agora
+              <Pencil />
+              Editar período
             </Button>
-          )}
-        </div>
+            {status === "published" && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={endingNow}
+                onClick={handleEndNow}
+              >
+                {endingNow ? <Loader2 className="animate-spin" /> : <StopCircle />}
+                Encerrar turma agora
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
