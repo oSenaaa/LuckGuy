@@ -19,10 +19,17 @@ import { Input } from "@/components/ui/input";
 
 type ImportReport = {
   createdCount: number;
+  updatedCount: number;
   createdCompanies: {
     name: string;
     cnpj: string;
     workplaceCount: number;
+    sourceRows: number[];
+  }[];
+  updatedCompanies: {
+    name: string;
+    cnpj: string;
+    workplacesAdded: string[];
     sourceRows: number[];
   }[];
   skipped: { rowNumber: number; reason: string }[];
@@ -81,10 +88,19 @@ export function CompanyImportDialog({
       }
       setReport(data);
       setStep(preview ? "preview" : "done");
-      if (!preview && data.createdCount > 0) {
-        toast.success(
-          `${data.createdCount} empresa${data.createdCount === 1 ? "" : "s"} importada${data.createdCount === 1 ? "" : "s"}.`,
-        );
+      if (!preview && (data.createdCount > 0 || data.updatedCount > 0)) {
+        const parts = [];
+        if (data.createdCount > 0) {
+          parts.push(
+            `${data.createdCount} empresa${data.createdCount === 1 ? "" : "s"} importada${data.createdCount === 1 ? "" : "s"}`,
+          );
+        }
+        if (data.updatedCount > 0) {
+          parts.push(
+            `${data.updatedCount} empresa${data.updatedCount === 1 ? "" : "s"} atualizada${data.updatedCount === 1 ? "" : "s"} com novos postos`,
+          );
+        }
+        toast.success(`${parts.join(" e ")}.`);
         router.refresh();
       }
     } catch {
@@ -166,11 +182,27 @@ export function CompanyImportDialog({
               <StepLabel number={3}>{step === "preview" ? "Revisar prévia" : "Confirmar"}</StepLabel>
               <div className="grid gap-2 rounded-lg border border-border p-3 text-sm">
                 <p className="font-medium">
-                  {report.createdCount} empresa{report.createdCount === 1 ? "" : "s"}{" "}
-                  {step === "preview" ? "pronta" : "importada"}
+                  {report.createdCount} empresa{report.createdCount === 1 ? "" : "s"} nova
                   {report.createdCount === 1 ? "" : "s"}
-                  {step === "preview" ? " para importar" : ""}.
+                  {step === "preview" ? " para importar" : " importada"}
+                  {step === "preview" ? "" : report.createdCount === 1 ? "" : "s"}.
                 </p>
+                {report.updatedCount > 0 && (
+                  <p className="text-muted-foreground">
+                    {report.updatedCount} empresa{report.updatedCount === 1 ? "" : "s"} já
+                    cadastrada{report.updatedCount === 1 ? "" : "s"}{" "}
+                    {step === "preview" ? "vai receber novos postos" : "recebeu novos postos"}:
+                  </p>
+                )}
+                {report.updatedCompanies.length > 0 && (
+                  <ul className="max-h-32 list-disc space-y-0.5 overflow-y-auto pl-5 text-muted-foreground">
+                    {report.updatedCompanies.map((c) => (
+                      <li key={c.cnpj}>
+                        {c.name}: {c.workplacesAdded.join(", ")}
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 {report.createdCompanies.some((c) => c.sourceRows.length > 1) && (
                   <div>
                     <p className="text-muted-foreground">Linhas combinadas na mesma empresa:</p>
@@ -219,7 +251,7 @@ export function CompanyImportDialog({
               </Button>
               <Button
                 type="button"
-                disabled={pending || report?.createdCount === 0}
+                disabled={pending || (report?.createdCount === 0 && report?.updatedCount === 0)}
                 onClick={() => void runImport(false)}
               >
                 {pending && <CircleNotch size={16} className="animate-spin" />}

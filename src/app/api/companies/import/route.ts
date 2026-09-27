@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { isNull } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { getDb } from "@/lib/db";
 import { companies, companyWorkplaces } from "@/lib/db/schema";
 import { AdminAuthError, requireEditor } from "@/lib/permissions";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { parseCompanyImportWorkbook, type ParsedCompanyRow } from "@/lib/company-import";
+import { normalizeText } from "@/lib/text";
+import { onlyDigits } from "@/lib/document";
 
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024;
 const MAX_ROWS = 1000;
@@ -61,32 +64,73 @@ export async function POST(request: Request) {
   }
 
   const db = getDb();
-  const existingCompanies = await db.select({ cnpj: companies.cnpj }).from(companies);
-  const existingDocuments = new Set(
-    existingCompanies.map((c) => c.cnpj).filter((v): v is string => Boolean(v)),
+  const existingCompanies = await db
+    .select({ id: companies.id, cnpj: companies.cnpj, archivedAt: companies.archivedAt })
+    .from(companies);
+  // Normaliza pra dígitos: CNPJs cadastrados antes da validação atual podem
+  // estar salvos com pontuação (ex: "02.841.113/0001-45"), enquanto a
+  // planilha sempre chega só em dígitos — sem isso o match falha e tenta
+  // criar uma empresa duplicada com o mesmo documento.
+  const companyByDocument = new Map(
+    existingCompanies
+      .filter((c): c is typeof c & { cnpj: string } => Boolean(c.cnpj))
+      .map((c) => [onlyDigits(c.cnpj), c]),
   );
+
+  const existingWorkplaces = await db
+    .select({ companyId: companyWorkplaces.companyId, name: companyWorkplaces.name })
+    .from(companyWorkplaces)
+    .where(isNull(companyWorkplaces.archivedAt));
+  const workplaceNamesByCompany = new Map<string, Set<string>>();
+  for (const w of existingWorkplaces) {
+    const set = workplaceNamesByCompany.get(w.companyId) ?? new Set<string>();
+    set.add(normalizeText(w.name));
+    workplaceNamesByCompany.set(w.companyId, set);
+  }
 
   const skipped: { rowNumber: number; reason: string }[] = parsed.rowErrors.map((e) => ({
     rowNumber: e.rowNumber,
     reason: e.reason,
   }));
   const toInsert: ParsedCompanyRow[] = [];
+  const toUpdate: { row: ParsedCompanyRow; companyId: string; newWorkplaces: string[] }[] = [];
 
   for (const row of parsed.rows) {
-    if (existingDocuments.has(row.document)) {
-      const linesLabel =
-        row.sourceRows.length > 1 ? ` (linhas ${row.sourceRows.join(", ")})` : "";
-      skipped.push({
-        rowNumber: row.rowNumber,
-        reason: `CNPJ/CPF já cadastrado.${linesLabel}`,
-      });
+    const linesLabel = row.sourceRows.length > 1 ? ` (linhas ${row.sourceRows.join(", ")})` : "";
+    const existing = companyByDocument.get(row.document);
+
+    if (existing) {
+      if (existing.archivedAt) {
+        skipped.push({
+          rowNumber: row.rowNumber,
+          reason: `CNPJ/CPF pertence a uma empresa arquivada.${linesLabel}`,
+        });
+        continue;
+      }
+
+      const alreadyRegistered = workplaceNamesByCompany.get(existing.id) ?? new Set<string>();
+      const newWorkplaces = row.workplaces.filter(
+        (name) => !alreadyRegistered.has(normalizeText(name)),
+      );
+
+      if (newWorkplaces.length === 0) {
+        skipped.push({
+          rowNumber: row.rowNumber,
+          reason: `CNPJ/CPF já cadastrado, sem posto de trabalho novo para adicionar.${linesLabel}`,
+        });
+        continue;
+      }
+
+      toUpdate.push({ row, companyId: existing.id, newWorkplaces });
       continue;
     }
+
     toInsert.push(row);
   }
 
   let createdCount = 0;
-  if (!preview && toInsert.length > 0) {
+  let updatedCount = 0;
+  if (!preview && (toInsert.length > 0 || toUpdate.length > 0)) {
     const batch: BatchItem<"pg">[] = [];
     for (const row of toInsert) {
       const companyId = crypto.randomUUID();
@@ -105,10 +149,19 @@ export async function POST(request: Request) {
         );
       }
     }
+    for (const { companyId, newWorkplaces } of toUpdate) {
+      for (const workplaceName of newWorkplaces) {
+        batch.push(
+          db.insert(companyWorkplaces).values({ companyId, name: workplaceName }),
+        );
+      }
+    }
     await db.batch(batch as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
     createdCount = toInsert.length;
+    updatedCount = toUpdate.length;
   } else if (preview) {
     createdCount = toInsert.length;
+    updatedCount = toUpdate.length;
   }
 
   if (!preview) revalidatePath("/admin/companies");
@@ -116,10 +169,17 @@ export async function POST(request: Request) {
   return NextResponse.json({
     preview,
     createdCount,
+    updatedCount,
     createdCompanies: toInsert.map((row) => ({
       name: row.name,
       cnpj: row.document,
       workplaceCount: row.workplaces.length,
+      sourceRows: row.sourceRows,
+    })),
+    updatedCompanies: toUpdate.map(({ row, newWorkplaces }) => ({
+      name: row.name,
+      cnpj: row.document,
+      workplacesAdded: newWorkplaces,
       sourceRows: row.sourceRows,
     })),
     skipped: skipped.sort((a, b) => a.rowNumber - b.rowNumber),
