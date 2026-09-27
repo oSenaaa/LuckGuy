@@ -12,6 +12,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/admin/status-badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -21,6 +28,12 @@ import {
 } from "@/components/ui/table";
 
 const HEAD_CLASS = "text-xs font-medium uppercase tracking-wide text-muted-foreground";
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "Todos os status" },
+  { value: "active", label: "Ativas" },
+  { value: "archived", label: "Arquivadas" },
+] as const;
 
 export type Company = {
   id: string;
@@ -64,6 +77,7 @@ export function CompanyList({
   onCreateClick: () => void;
 }) {
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("active");
 
   const filtered = useMemo(() => {
     const term = query.trim();
@@ -71,31 +85,53 @@ export function CompanyList({
       if (Boolean(a.archivedAt) === Boolean(b.archivedAt)) return 0;
       return a.archivedAt ? 1 : -1;
     });
-    if (!term) return sorted;
+
+    const statusFiltered = sorted.filter((company) => {
+      if (statusFilter === "active") return !company.archivedAt;
+      if (statusFilter === "archived") return Boolean(company.archivedAt);
+      return true;
+    });
+
+    if (!term) return statusFiltered;
 
     const normalizedTerm = normalizeText(term);
     const digitsTerm = onlyDigits(term);
 
-    return sorted.filter((company) => {
+    return statusFiltered.filter((company) => {
       if (normalizeText(company.name).includes(normalizedTerm)) return true;
       if (digitsTerm && onlyDigits(company.cnpj ?? "").includes(digitsTerm)) return true;
       return false;
     });
-  }, [companies, query]);
+  }, [companies, query, statusFilter]);
 
   return (
     <div className="space-y-3">
-      <div className="relative w-full sm:w-72">
-        <MagnifyingGlass
-          size={16}
-          className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground"
-        />
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar por nome ou CNPJ/CPF"
-          className="pl-8"
-        />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full sm:w-72">
+          <MagnifyingGlass
+            size={16}
+            className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar por nome ou CNPJ/CPF"
+            className="pl-8"
+          />
+        </div>
+
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {companies.length === 0 ? (
@@ -109,7 +145,7 @@ export function CompanyList({
       ) : filtered.length === 0 ? (
         <div className="rounded-lg border border-border">
           <p className="px-4 py-16 text-center text-sm text-muted-foreground">
-            Nenhuma empresa encontrada para essa busca.
+            Nenhuma empresa encontrada para esses filtros.
           </p>
         </div>
       ) : (
