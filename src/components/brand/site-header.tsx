@@ -7,12 +7,11 @@ import { ShieldCheck } from "lucide-react";
 import { LiderLogo } from "./logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { isPublicViewerRoute } from "@/lib/public-nav";
 
 export function SiteHeader() {
   const pathname = usePathname();
-  // O colaborador identificando-se ou assistindo ao treinamento não deve ver
-  // caminho pra área administrativa — só a tela de identificação/vídeo.
-  const isParticipantArea = /^\/t\//.test(pathname ?? "");
+  const isParticipantArea = isPublicViewerRoute(pathname);
 
   return (
     <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/70">

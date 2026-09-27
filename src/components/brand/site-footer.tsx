@@ -4,13 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { LiderLogo } from "./logo";
+import { isPublicViewerRoute } from "@/lib/public-nav";
 
 export function SiteFooter() {
   const pathname = usePathname();
-  // O colaborador identificando-se ou assistindo ao treinamento não deve ver
-  // links de navegação (nem para a home, nem para a área administrativa) —
-  // só a tela de identificação/vídeo. Mesmo padrão de rota do SiteHeader.
-  const isParticipantArea = /^\/t\//.test(pathname ?? "");
+  const isParticipantArea = isPublicViewerRoute(pathname);
 
   return (
     <footer className="border-t bg-muted/40">
