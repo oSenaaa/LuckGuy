@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { clerkClient } from "@clerk/nextjs/server";
 import { requireAdmin, ROLES, type Role } from "@/lib/permissions";
+import { isEmailAllowed } from "@/lib/access-allowlist";
 
 function readRole(value: FormDataEntryValue | null): Role | null {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value)
@@ -19,6 +20,12 @@ export async function inviteUser(formData: FormData) {
 
   if (!name) return { ok: false as const, error: "Nome é obrigatório." };
   if (!email) return { ok: false as const, error: "E-mail é obrigatório." };
+  if (!isEmailAllowed(email)) {
+    return {
+      ok: false as const,
+      error: "Só é possível convidar e-mails do domínio @lidersaude.com.br.",
+    };
+  }
   if (!role) return { ok: false as const, error: "Selecione um nível de permissão." };
 
   const client = await clerkClient();

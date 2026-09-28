@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { isRole, ROLES, type Role } from "@/lib/roles";
+import { isEmailAllowed } from "@/lib/access-allowlist";
 
 export type { Role };
 export { ROLES, ROLE_LABELS, isRole } from "@/lib/roles";
@@ -28,6 +29,10 @@ export const getCurrentRole = cache(async (): Promise<{ userId: string; role: Ro
 
   const client = await clerkClient();
   const user = await client.users.getUser(userId);
+
+  const email = user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)?.emailAddress;
+  if (!isEmailAllowed(email)) return null;
+
   const role = user.publicMetadata.role;
   if (!isRole(role)) return null;
 
