@@ -2,7 +2,14 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Buildings, MagnifyingGlass, Plus } from "@phosphor-icons/react";
+import {
+  Buildings,
+  CaretUpDown,
+  MagnifyingGlass,
+  Plus,
+  SortAscending,
+  SortDescending,
+} from "@phosphor-icons/react";
 
 import { CompanyRowActions } from "./company-row-actions";
 import { normalizeText } from "@/lib/text";
@@ -78,6 +85,11 @@ export function CompanyList({
 }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("active");
+  const [nameSort, setNameSort] = useState<"default" | "asc" | "desc">("default");
+
+  function toggleNameSort() {
+    setNameSort((prev) => (prev === "default" ? "asc" : prev === "asc" ? "desc" : "default"));
+  }
 
   const filtered = useMemo(() => {
     const term = query.trim();
@@ -92,17 +104,22 @@ export function CompanyList({
       return true;
     });
 
-    if (!term) return statusFiltered;
+    const searched = !term
+      ? statusFiltered
+      : statusFiltered.filter((company) => {
+          const normalizedTerm = normalizeText(term);
+          const digitsTerm = onlyDigits(term);
+          if (normalizeText(company.name).includes(normalizedTerm)) return true;
+          if (digitsTerm && onlyDigits(company.cnpj ?? "").includes(digitsTerm)) return true;
+          return false;
+        });
 
-    const normalizedTerm = normalizeText(term);
-    const digitsTerm = onlyDigits(term);
-
-    return statusFiltered.filter((company) => {
-      if (normalizeText(company.name).includes(normalizedTerm)) return true;
-      if (digitsTerm && onlyDigits(company.cnpj ?? "").includes(digitsTerm)) return true;
-      return false;
+    if (nameSort === "default") return searched;
+    return [...searched].sort((a, b) => {
+      const comparison = a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+      return nameSort === "asc" ? comparison : -comparison;
     });
-  }, [companies, query, statusFilter]);
+  }, [companies, query, statusFilter, nameSort]);
 
   return (
     <div className="space-y-3">
@@ -196,7 +213,22 @@ export function CompanyList({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className={HEAD_CLASS}>Nome</TableHead>
+                  <TableHead className={HEAD_CLASS}>
+                    <button
+                      type="button"
+                      onClick={toggleNameSort}
+                      className="flex items-center gap-1 hover:text-foreground"
+                    >
+                      Nome
+                      {nameSort === "asc" ? (
+                        <SortAscending size={14} />
+                      ) : nameSort === "desc" ? (
+                        <SortDescending size={14} />
+                      ) : (
+                        <CaretUpDown size={14} />
+                      )}
+                    </button>
+                  </TableHead>
                   <TableHead className={HEAD_CLASS}>CNPJ/CPF</TableHead>
                   <TableHead className={HEAD_CLASS}>Contato</TableHead>
                   <TableHead className={HEAD_CLASS}>Status</TableHead>
