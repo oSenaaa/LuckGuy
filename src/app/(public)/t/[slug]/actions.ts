@@ -18,6 +18,7 @@ import {
 } from "@/lib/db/schema";
 import { createParticipantSession } from "@/lib/participant-session";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { MATRIZ_WORKPLACE_VALUE } from "./workplace-constants";
 
 function normalizePhone(phone: string) {
   return phone.replace(/\D/g, "");
@@ -118,7 +119,7 @@ export async function identifyParticipant(
       );
 
     let validWorkplaceId: string | null = null;
-    if (eligibleWorkplaces.length > 0) {
+    if (eligibleWorkplaces.length > 0 && workplaceId !== MATRIZ_WORKPLACE_VALUE) {
       if (!workplaceId || !eligibleWorkplaces.some((w) => w.workplaceId === workplaceId)) {
         return { error: "Selecione seu posto de trabalho." };
       }

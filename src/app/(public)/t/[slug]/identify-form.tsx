@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { MATRIZ_WORKPLACE_VALUE } from "./workplace-constants";
 
 const initialState: IdentifyParticipantState = { error: null };
 
@@ -45,8 +46,6 @@ export function IdentifyForm({
     () => companies.find((company) => company.id === selectedCompanyId)?.workplaces ?? [],
     [companies, selectedCompanyId],
   );
-  const autoWorkplaceId =
-    selectedCompanyWorkplaces.length === 1 ? selectedCompanyWorkplaces[0].id : "";
 
   function handleCompanyChange(companyId: string) {
     setSelectedCompanyId(companyId);
@@ -99,7 +98,7 @@ export function IdentifyForm({
       {companies.length === 1 && (
         <input type="hidden" name="companyId" value={companies[0].id} />
       )}
-      {selectedCompanyWorkplaces.length > 1 && (
+      {selectedCompanyWorkplaces.length >= 1 && (
         <div className="grid gap-2">
           <Label htmlFor="workplaceSelect">Posto de trabalho</Label>
           <input type="hidden" name="workplaceId" value={selectedWorkplaceId} />
@@ -113,11 +112,13 @@ export function IdentifyForm({
                   {workplace.name}
                 </SelectItem>
               ))}
+              <SelectItem value={MATRIZ_WORKPLACE_VALUE}>
+                Matriz / Nenhum posto específico
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
       )}
-      {autoWorkplaceId && <input type="hidden" name="workplaceId" value={autoWorkplaceId} />}
       {requiresPin && (
         <div className="grid gap-2">
           <Label htmlFor="accessPin">Código da turma</Label>
