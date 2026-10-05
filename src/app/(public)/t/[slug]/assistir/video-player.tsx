@@ -704,6 +704,30 @@ export function VideoPlayer({
     };
     const fullscreenElement = document.fullscreenElement ?? doc.webkitFullscreenElement;
 
+    // Safari no iPhone não implementa a Fullscreen API em elementos genéricos
+    // (só o Safari de iPad/desktop suporta `requestFullscreen`/
+    // `webkitRequestFullscreen` em qualquer elemento) — nesse caso as duas
+    // chamadas abaixo ficam `undefined` e o botão não fazia nada, em
+    // silêncio. A única tela cheia real disponível no iPhone é a do próprio
+    // elemento <video>, via `webkitEnterFullscreen` (API não padrão, exibe os
+    // controles nativos do iOS em vez dos nossos — é a limitação da Apple,
+    // não dá pra manter nossa UI customizada nesse modo).
+    if (!container.requestFullscreen && !container.webkitRequestFullscreen) {
+      const video = videoRef.current as
+        | (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
+        | null;
+      if (provider === "blob" && video?.webkitEnterFullscreen) {
+        try {
+          video.webkitEnterFullscreen();
+        } catch {
+          toast.error("Tela cheia não é suportada neste navegador.");
+        }
+      } else {
+        toast.error("Tela cheia não é suportada neste navegador.");
+      }
+      return;
+    }
+
     try {
       if (fullscreenElement) {
         if (document.exitFullscreen) await document.exitFullscreen();
